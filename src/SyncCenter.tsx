@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useStore, useHelpers } from "./store";
 import { cx, fmtClock, timeAgo } from "./lib";
 import { Icon, Reveal, Toggle, EmptyState, SyncDot } from "./ui";
-import { SYNC_STATUS_COLOR, SYNC_STATUS_TEXT } from "./sync";
+import { SYNC_STATUS_COLOR, syncStatusText } from "./sync";
 
 export default function SyncCenter() {
   const { state, set, toast, route, syncStatus, syncLogs, queue, conflicts, syncApi, selectedId } = useStore();
@@ -33,7 +33,7 @@ export default function SyncCenter() {
             <div className="flex flex-wrap items-center gap-4 border-b px-5 py-4" style={{ borderColor: "var(--line)" }}>
               <span className={cx("dot !h-[12px] !w-[12px]", syncStatus === "online" && "breathe")} style={{ background: SYNC_STATUS_COLOR[syncStatus] }} />
               <div className="min-w-0 flex-1">
-                <div className="title-serif text-[16px] font-bold">{SYNC_STATUS_TEXT[syncStatus]}</div>
+                <div className="title-serif text-[16px] font-bold">{syncStatusText(syncStatus)}</div>
                 <div className="mt-0.5 truncate text-[11.5px]" style={{ color: "var(--ink-2)" }}>
                   {s.wsUrl ? <>地址 <span className="font-mono">{s.wsUrl}</span> · 频道 <span className="font-mono">#{s.ns}</span> · 我是「{s.deviceName}」</> : "尚未填写 WebSocket 地址"}
                 </div>

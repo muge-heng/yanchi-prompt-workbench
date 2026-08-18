@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useStore, newPrompt as np } from "./store";
-import { cx, timeAgo, TYPE_META, TYPE_ORDER, composePrompt, copyText } from "./lib";
+import { cx, timeAgo, allTypes, getTypeDef, getLang, tl, tb, tt, composePrompt, copyText } from "./lib";
 import { Icon, Reveal, SectionTitle, TypeBadge, EmptyState, SyncDot } from "./ui";
 import { seedState } from "./seed";
 
@@ -115,7 +115,7 @@ export default function Home() {
                   </div>
                   <div className="title-serif mb-1.5 truncate text-[15px] font-bold">{p.title}</div>
                   <p className="mb-3 line-clamp-2 min-h-[34px] text-[11.5px] leading-relaxed" style={{ color: "var(--ink-2)" }}>
-                    {p.summary || p.body.slice(0, 60) || TYPE_META[p.type].blurb}
+                    {p.summary || p.body.slice(0, 60) || tb(getTypeDef(p.type))}
                   </p>
                   <div className="flex items-center justify-between">
                     <span className="text-[10.5px] tabular-nums" style={{ color: "var(--ink-3)" }}>用过 {p.useCount} 次</span>
@@ -136,20 +136,19 @@ export default function Home() {
             <section>
               <SectionTitle>按类型开始</SectionTitle>
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                {TYPE_ORDER.map((t, i) => {
-                  const m = TYPE_META[t];
-                  const n = live.filter((p) => p.type === t).length;
+                {allTypes().map((t, i) => {
+                  const n = live.filter((p) => p.type === t.id).length;
                   return (
-                    <Reveal key={t} delay={i * 60}>
+                    <Reveal key={t.id} delay={i * 60}>
                       <button className="card card-hover group w-full p-4 text-left"
-                        onClick={() => createByType(t)}>
+                        onClick={() => createByType(t.id)}>
                         <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-[10px] border transition-transform group-hover:-rotate-6"
-                          style={{ color: m.color, borderColor: "color-mix(in srgb, " + m.color + " 40%, var(--line))", background: "color-mix(in srgb, " + m.color + " 10%, var(--card))", boxShadow: "var(--inset)" }}>
-                          <Icon name={m.icon} size={17} />
+                          style={{ color: t.color, borderColor: "color-mix(in srgb, " + t.color + " 40%, var(--line))", background: "color-mix(in srgb, " + t.color + " 10%, var(--card))", boxShadow: "var(--inset)" }}>
+                          <Icon name={t.icon} size={17} />
                         </div>
-                        <div className="title-serif text-[15px] font-bold">{m.label}</div>
-                        <div className="mt-0.5 text-[11px]" style={{ color: "var(--ink-3)" }}>{m.blurb}</div>
-                        <div className="mt-2 text-[10.5px] tabular-nums" style={{ color: m.color }}>{n} 条在库</div>
+                        <div className="title-serif text-[15px] font-bold">{tl(t)}</div>
+                        <div className="mt-0.5 text-[11px]" style={{ color: "var(--ink-3)" }}>{tb(t)}</div>
+                        <div className="mt-2 text-[10.5px] tabular-nums" style={{ color: t.color }}>{n} {tt("条在库", "items")}</div>
                       </button>
                     </Reveal>
                   );
@@ -257,21 +256,21 @@ export default function Home() {
     </div>
   );
 
-  function createByType(t: keyof typeof TYPE_META) {
+  function createByType(t: string) {
     const vaultId =
       t === "agent" ? state.vaults.find((v) => v.id === "v-agent")?.id :
       t === "image" ? state.vaults.find((v) => v.id === "v-image")?.id :
       t === "video" ? state.vaults.find((v) => v.id === "v-video")?.id :
       state.vaults[0]?.id;
-    if (!vaultId) { toast("warn", "请先创建一个仓库"); return; }
-    const p = np(vaultId, t, "未命名" + TYPE_META[t].label + "提示词");
+    if (!vaultId) { toast("warn", tt("请先创建一个仓库", "Please create a vault first")); return; }
+    const p = np(vaultId, t as any, tt("未命名", "Untitled ") + tl(getTypeDef(t)) + tt("提示词", " prompt"));
     set((s) => ({ ...s, prompts: [p, ...s.prompts] }));
     select(p.id); setFocus(true);
   }
 
   function loadSample() {
-    set(() => seedState());
-    toast("ok", "示例工作台已载入");
+    set(() => seedState(getLang()));
+    toast("ok", tt("示例工作台已载入", "Sample workspace loaded"));
   }
   function clearSample() {
     set((s) => ({ ...s, vaults: [], groups: [], tags: [], prompts: [] }));

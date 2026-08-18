@@ -1,6 +1,6 @@
 import { useMemo, useState, type ReactNode } from "react";
 import { useStore, useHelpers, newPrompt, type SmartView } from "./store";
-import { cx, timeAgo, uid, TYPE_META, TYPE_ORDER, composePrompt, extractVars, type Prompt, type Vault, type Tag } from "./lib";
+import { cx, timeAgo, uid, allTypes, getTypeDef, tl, tb, tt, composePrompt, extractVars, type Prompt, type Vault, type Tag } from "./lib";
 import { Icon, Modal, Confirm, Reveal, TypeBadge, EmptyState, Toggle } from "./ui";
 import { NewVaultModal } from "./Sidebar";
 
@@ -265,10 +265,10 @@ export function PromptListPage() {
             <input className="input !pl-9" data-search-input placeholder="搜索标题、正文、标签、变量…" value={q} onChange={(e) => setQ(e.target.value)} />
           </div>
           <div className="flex flex-wrap items-center gap-1.5">
-            <button className={cx("chip chip-btn", typeF === "all" && "!border-[var(--brass-2)] !bg-[#f6eeda] font-medium text-[var(--ink)]")} onClick={() => setTypeF("all")}>全部</button>
-            {TYPE_ORDER.map((t) => (
-              <button key={t} className={cx("chip chip-btn", typeF === t && "!border-[var(--brass-2)] !bg-[#f6eeda] font-medium text-[var(--ink)]")} onClick={() => setTypeF(t)}>
-                <Icon name={TYPE_META[t].icon} size={11} /> {TYPE_META[t].label}
+            <button className={cx("chip chip-btn", typeF === "all" && "!border-[var(--brass-2)] !bg-[#f6eeda] font-medium text-[var(--ink)]")} onClick={() => setTypeF("all")}>{tt("全部", "All")}</button>
+            {allTypes().map((t) => (
+              <button key={t.id} className={cx("chip chip-btn", typeF === t.id && "!border-[var(--brass-2)] !bg-[#f6eeda] font-medium text-[var(--ink)]")} onClick={() => setTypeF(t.id)}>
+                <Icon name={t.icon} size={11} /> {tl(t)}
               </button>
             ))}
           </div>
@@ -482,7 +482,7 @@ export function PromptCard({ p, q, idx, selMode, sel, onSel, isTrash, onRestore,
         </div>
         <div className="title-serif mb-1 truncate text-[15px] font-bold">{hl(p.title, q)}</div>
         <p className="mb-3 line-clamp-2 min-h-[32px] text-[11.5px] leading-relaxed" style={{ color: "var(--ink-2)" }}>
-          {hl(p.summary || p.body.slice(0, 80) || TYPE_META[p.type].blurb, q)}
+          {hl(p.summary || p.body.slice(0, 80) || tb(getTypeDef(p.type)), q)}
         </p>
         {tags.length > 0 && (
           <div className="mb-3 flex flex-wrap gap-1.5">

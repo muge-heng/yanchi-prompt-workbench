@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { useStore, useHelpers } from "./store";
-import { cx, TYPE_META, TYPE_ORDER, type AppState, type Prompt } from "./lib";
+import { cx, allTypes, tl, tb, tt, type AppState, type Prompt } from "./lib";
 import { Icon, Modal, Confirm, Reveal, Toggle, Kbd } from "./ui";
 import { TagManager } from "./lists";
 
@@ -107,24 +107,20 @@ export default function Settings() {
             right={<Toggle on={s.compactList} onChange={(b) => upS({ compactList: b })} label="紧凑列表" />} />
         </Sec>
 
-        <Sec title="类型与模板" desc="每种类型都有自己的字段结构，切换类型时字段随之变化" delay={120}>
-          <div className="space-y-3">
-            {TYPE_ORDER.map((t) => (
-              <div key={t} className="rounded-xl border px-4 py-3" style={{ borderColor: "var(--line)", background: "var(--card-2)" }}>
-                <div className="mb-2 flex items-center gap-2">
-                  <span style={{ color: TYPE_META[t].color }}><Icon name={TYPE_META[t].icon} size={15} /></span>
-                  <span className="title-serif text-[13px] font-bold">{TYPE_META[t].label}</span>
-                  <span className="text-[10.5px]" style={{ color: "var(--ink-3)" }}>{TYPE_META[t].blurb}</span>
-                </div>
-                <div className="flex flex-wrap gap-1.5">
-                  {(TYPE_META[t].fields.length ? TYPE_META[t].fields : [{ label: "正文" } as any]).map((f: any) => (
-                    <span key={f.label} className="chip !py-[1px] !text-[10.5px]">{f.label}</span>
-                  ))}
-                  {TYPE_META[t].params.map((pm) => <span key={pm.key} className="chip !py-[1px] !text-[10.5px] opacity-70">{pm.label}</span>)}
-                </div>
+        <Sec title={tt("类型与模板", "Types & templates")} desc={tt("每种类型都有自己的字段结构，可在此新建、编辑字段与开关", "Each type has its own fields — create, edit and toggle them here")} delay={120}>
+          <div className="mb-4 space-y-2.5">
+            {allTypes().map((t) => (
+              <div key={t.id} className="flex items-center gap-2.5 rounded-xl border px-4 py-2.5" style={{ borderColor: "var(--line)", background: "var(--card-2)" }}>
+                <span style={{ color: t.color }}><Icon name={t.icon} size={15} /></span>
+                <span className="title-serif text-[13px] font-bold">{tl(t)}</span>
+                <span className="hidden min-w-0 flex-1 truncate text-[10.5px] sm:block" style={{ color: "var(--ink-3)" }}>{tb(t)}</span>
+                <span className="ml-auto flex-none text-[10.5px] tabular-nums" style={{ color: "var(--ink-3)" }}>{t.fields.filter((f) => !f.hidden).length} {tt("个字段", "fields")}</span>
               </div>
             ))}
           </div>
+          <button className="btn btn-primary" onClick={() => nav({ name: "types" })}>
+            <Icon name="settings" size={14} /> {tt("打开类型中心", "Open Type Center")}
+          </button>
         </Sec>
 
         <Sec title="标签管理" desc="横向组织提示词；未使用的标签可以一键清理" delay={160}>

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useStore, versionOf, runOf } from "./store";
-import { cx, uid, extractVars, composePrompt, imageFormats, videoFormats, paramSummary, fmtClock, type Prompt } from "./lib";
+import { cx, uid, tt, extractVars, composePrompt, imageFormats, videoFormats, paramSummary, fmtClock, type Prompt } from "./lib";
 import { Icon, CopyBtn } from "./ui";
 
 export default function Workbench({ p }: { p: Prompt }) {
@@ -28,7 +28,7 @@ export default function Workbench({ p }: { p: Prompt }) {
   const fmts = useMemo(() => {
     if (p.type === "image") return imageFormats(p, values);
     if (p.type === "video") return videoFormats(p, values);
-    return [{ name: "最终 Prompt", text: final }];
+    return [{ name: tt("最终 Prompt", "Final prompt"), text: final }];
   }, [p, values, final]);
 
   const unfilled = vars.filter((v) => !values[v]);
@@ -47,7 +47,7 @@ export default function Workbench({ p }: { p: Prompt }) {
 
   function trialRun() {
     recordRun();
-    toast("ok", "已试运行并记入调试历史");
+    toast("ok", tt("已试运行并记入调试历史", "Trial run logged to debug history"));
   }
 
   async function callExternal() {
@@ -63,10 +63,10 @@ export default function Workbench({ p }: { p: Prompt }) {
       const data = await res.json();
       const text = data?.choices?.[0]?.message?.content || data?.content?.[0]?.text || JSON.stringify(data).slice(0, 400);
       setExtResult(text);
-      toast("ok", "外部模型已返回结果");
+      toast("ok", tt("外部模型已返回结果", "External model returned a result"));
     } catch (e: any) {
       setExtResult("");
-      toast("err", `外部模型调用失败：${e?.message || "网络或服务不可达"}`);
+      toast("err", `${tt("外部模型调用失败", "External model call failed")}: ${e?.message || tt("网络或服务不可达", "network or service unreachable")}`);
     } finally {
       setExtLoading(false);
     }
@@ -79,14 +79,14 @@ export default function Workbench({ p }: { p: Prompt }) {
         <div className="space-y-3">
           <div className="card p-3.5">
             <div className="mb-2.5 flex items-center justify-between">
-              <span className="title-serif text-[12.5px] font-bold">变量</span>
+              <span className="title-serif text-[12.5px] font-bold">{tt("变量", "Variables")}</span>
               <span className="text-[10.5px] tabular-nums" style={{ color: unfilled.length ? "var(--warn)" : "var(--ok)" }}>
-                {vars.length === 0 ? "无变量" : unfilled.length ? `剩 ${unfilled.length} 个未填` : "已全部填写"}
+                {vars.length === 0 ? tt("无变量", "No variables") : unfilled.length ? `${unfilled.length} ${tt("个未填", "unfilled")}` : tt("已全部填写", "All filled")}
               </span>
             </div>
             {vars.length === 0 ? (
               <p className="text-[11px] leading-relaxed" style={{ color: "var(--ink-3)" }}>
-                在正文中写 {"{{变量名}}"} 即可自动识别，例如 {"{{产品名}}"}、{"{{风格}}"}。
+                {tt("在正文中写 {{变量名}} 即可自动识别，例如 {{产品名}}、{{风格}}。", "Write {{name}} in the body and it is auto-detected, e.g. {{product}}, {{style}}.")}
               </p>
             ) : (
               <div className="space-y-2.5">
@@ -96,11 +96,11 @@ export default function Workbench({ p }: { p: Prompt }) {
                       <span className="font-mono text-[10px]" style={{ color: "var(--brass)" }}>{"{{"}</span>{v}<span className="font-mono text-[10px]" style={{ color: "var(--brass)" }}>{"}}"}</span>
                       {values[v] && <Icon name="check" size={9} />}
                     </label>
-                    <input className="input !py-[6px] !text-[12px]" placeholder={`填写${v}`} value={values[v] || ""}
+                    <input className="input !py-[6px] !text-[12px]" placeholder={`${tt("填写", "Fill")} ${v}`} value={values[v] || ""}
                       onChange={(e) => setValues((o) => ({ ...o, [v]: e.target.value }))} />
                   </div>
                 ))}
-                <button className="btn btn-ghost w-full !py-[5px] !text-[11px]" onClick={() => setValues({})}>清空填写</button>
+                <button className="btn btn-ghost w-full !py-[5px] !text-[11px]" onClick={() => setValues({})}>{tt("清空填写", "Clear values")}</button>
               </div>
             )}
           </div>
@@ -109,12 +109,12 @@ export default function Workbench({ p }: { p: Prompt }) {
           <div className="card p-3.5">
             <div className="mb-2.5 flex items-center gap-1.5">
               <Icon name="layers" size={13} className="opacity-60" />
-              <span className="title-serif text-[12.5px] font-bold">变量预设</span>
+              <span className="title-serif text-[12.5px] font-bold">{tt("变量预设", "Variable presets")}</span>
             </div>
             {p.presets.length > 0 && (
               <div className="mb-2.5 flex flex-wrap gap-1.5">
                 {p.presets.map((ps) => (
-                  <button key={ps.id} className="chip chip-btn !py-[2px] !text-[10.5px] group/ps" onClick={() => { setValues({ ...ps.values }); toast("info", `已套用预设「${ps.name}」`); }}>
+                  <button key={ps.id} className="chip chip-btn !py-[2px] !text-[10.5px] group/ps" onClick={() => { setValues({ ...ps.values }); toast("info", `${tt("已套用预设", "Applied preset")}「${ps.name}」`); }}>
                     {ps.name}
                     <span className="opacity-0 group-hover/ps:opacity-70" onClick={(e) => {
                       e.stopPropagation();
