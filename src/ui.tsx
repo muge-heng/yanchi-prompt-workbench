@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { ReactNode, CSSProperties } from "react";
-import { cx, TYPE_META, type PromptType } from "./lib";
-import { SYNC_STATUS_COLOR, SYNC_STATUS_TEXT, type SyncStatus } from "./sync";
+import { cx, getTypeDef, tl, tt } from "./lib";
+import { SYNC_STATUS_COLOR, syncStatusText, type SyncStatus } from "./sync";
 
 /* ================= 手绘线性图标库 ================= */
 const PATHS: Record<string, ReactNode> = {
@@ -49,6 +49,20 @@ const PATHS: Record<string, ReactNode> = {
   link: <><path d="M9.5 14.5 14.5 9.5" /><path d="M11 6.8 13 4.8a3.4 3.4 0 0 1 4.8 4.8L15.8 11.6" /><path d="M13 17.2 11 19.2a3.4 3.4 0 0 1-4.8-4.8l2-2" /></>,
   collapse: <><path d="M8.5 5 4 12l4.5 7" /><path d="M15.5 5 20 12l-4.5 7" /></>,
   expand: <><path d="M4 8.5 12 4l7 4.5" /><path d="M4 15.5 12 20l7-4.5" /></>,
+  /* 以下为类型/字段编辑器补充图标 extra icons for the type editor */
+  globe: <><circle cx="12" cy="12" r="8.2" /><path d="M3.8 12h16.4" /><path d="M12 3.8c2.6 2.3 3.9 5.1 3.9 8.2s-1.3 5.9-3.9 8.2c-2.6-2.3-3.9-5.1-3.9-8.2s1.3-5.9 3.9-8.2z" /></>,
+  target: <><circle cx="12" cy="12" r="8.2" /><circle cx="12" cy="12" r="4.4" /><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none" /></>,
+  mic: <><rect x="9" y="3.5" width="6" height="10.5" rx="3" /><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0" /><path d="M12 18v2.5" /></>,
+  ruler: <><rect x="3" y="9" width="18" height="6" rx="1.4" /><path d="M7 9v2.6M11 9v2.6M15 9v2.6M19 9v2.6" /></>,
+  palette: <><path d="M12 3.8a8.2 8.2 0 1 0 0 16.4c1.2 0 1.9-.8 1.9-1.8 0-.9-.6-1.4-.6-2.2 0-1 .8-1.8 1.9-1.8h1.6c1.9 0 3.4-1.5 3.4-3.4 0-4-3.7-7.2-8.2-7.2z" /><circle cx="7.6" cy="10.2" r="1" fill="currentColor" stroke="none" /><circle cx="10.4" cy="6.8" r="1" fill="currentColor" stroke="none" /><circle cx="14.6" cy="6.8" r="1" fill="currentColor" stroke="none" /></>,
+  sun: <><circle cx="12" cy="12" r="4" /><path d="M12 3.5v2M12 18.5v2M3.5 12h2M18.5 12h2M6 6l1.4 1.4M16.6 16.6 18 18M18 6l-1.4 1.4M7.4 16.6 6 18" /></>,
+  camera: <><path d="M4 8.5A1.5 1.5 0 0 1 5.5 7h2.4l1.4-2h5.4l1.4 2h2.4A1.5 1.5 0 0 1 20 8.5v9A1.5 1.5 0 0 1 18.5 19h-13A1.5 1.5 0 0 1 4 17.5z" /><circle cx="12" cy="12.6" r="3.4" /></>,
+  tool: <><path d="M14.2 6.3a4 4 0 0 1 5-5l-2.8 2.8.6 2.4 2.4.6L22.2 4a4 4 0 0 1-5 5L8.6 17.6a2 2 0 1 1-2.8-2.8z" /></>,
+  rules: <><path d="M4.5 6h15M4.5 12h15M4.5 18h15" /><circle cx="8" cy="6" r="1.6" fill="var(--card)" /><circle cx="15" cy="12" r="1.6" fill="var(--card)" /><circle cx="10" cy="18" r="1.6" fill="var(--card)" /></>,
+  spark: <path d="M12 4.5c.5 3.6 1.9 5 5.5 5.5-3.6.5-5 1.9-5.5 5.5-.5-3.6-1.9-5-5.5-5.5 3.6-.5 5-1.9 5.5-5.5zM18.8 15.5c.3 1.6.9 2.2 2.5 2.5-1.6.3-2.2.9-2.5 2.5-.3-1.6-.9-2.2-2.5-2.5 1.6-.3 2.2-.9 2.5-2.5z" />,
+  edit: <><path d="M4 20l1-4L16.4 4.6a2.1 2.1 0 0 1 3 3L8 19z" /><path d="M13.6 6.4l3 3" /></>,
+  play: <path d="M8.5 6.2v11.6L18 12z" />,
+  type: <><path d="M5 7V4.5h14V7" /><path d="M12 4.5v15" /><path d="M9 19.5h6" /></>,
 };
 
 export function Icon({ name, size = 16, className, sw = 1.7 }: { name: string; size?: number; className?: string; sw?: number }) {
@@ -60,15 +74,15 @@ export function Icon({ name, size = 16, className, sw = 1.7 }: { name: string; s
   );
 }
 
-/* ================= 类型徽章 ================= */
-export function TypeBadge({ type, text = true, size = "md" }: { type: PromptType; text?: boolean; size?: "sm" | "md" }) {
-  const m = TYPE_META[type];
+/* ================= 类型徽章 Type badge（读取动态类型表） ================= */
+export function TypeBadge({ type, text = true, size = "md" }: { type: string; text?: boolean; size?: "sm" | "md" }) {
+  const m = getTypeDef(type);
   return (
     <span className={cx("inline-flex items-center gap-1.5 rounded-lg border font-medium",
       size === "sm" ? "px-1.5 py-[2px] text-[10.5px]" : "px-2 py-[3px] text-[11px]")}
       style={{ color: m.color, borderColor: "color-mix(in srgb, " + m.color + " 40%, var(--line))", background: "color-mix(in srgb, " + m.color + " 9%, var(--card))" }}>
       <Icon name={m.icon} size={size === "sm" ? 11 : 12.5} />
-      {text && m.label}
+      {text && tl(m)}
     </span>
   );
 }
@@ -77,8 +91,23 @@ export function SyncDot({ status, text = true }: { status: SyncStatus; text?: bo
   return (
     <span className="inline-flex items-center gap-1.5 text-[11.5px]" style={{ color: "var(--ink-2)" }}>
       <span className={cx("dot", status === "online" && "breathe")} style={{ background: SYNC_STATUS_COLOR[status] }} />
-      {text && SYNC_STATUS_TEXT[status]}
+      {text && syncStatusText(status)}
     </span>
+  );
+}
+
+/* ================= 语言切换 Language switch ================= */
+export function LangSwitch({ lang, onChange }: { lang: "zh" | "en"; onChange: (l: "zh" | "en") => void }) {
+  return (
+    <div className="inline-flex items-center rounded-lg border p-[2px]" style={{ borderColor: "var(--line-2)", background: "var(--inset-bg, var(--card-2))", boxShadow: "var(--inset)" }}>
+      {(["zh", "en"] as const).map((l) => (
+        <button key={l} type="button" onClick={() => onChange(l)}
+          className={cx("rounded-md px-2 py-[2px] text-[10.5px] font-medium transition-all", lang === l ? "bg-[var(--card)] shadow-sm" : "opacity-50 hover:opacity-80")}
+          style={lang === l ? { color: "var(--ink)", boxShadow: "var(--shadow-s)" } : { color: "var(--ink-2)" }}>
+          {l === "zh" ? "中" : "EN"}
+        </button>
+      ))}
+    </div>
   );
 }
 
@@ -106,7 +135,7 @@ export function Modal({ open, onClose, title, children, width = 460 }: { open: b
         {title && (
           <div className="sticky top-0 z-10 flex items-center justify-between border-b px-5 py-3.5" style={{ borderColor: "var(--line)", background: "var(--card)" }}>
             <div className="title-serif text-[15px] font-bold">{title}</div>
-            <button className="icon-btn" onClick={onClose} aria-label="关闭"><Icon name="close" size={15} /></button>
+            <button className="icon-btn" onClick={onClose} aria-label={tt("关闭", "Close")}><Icon name="close" size={15} /></button>
           </div>
         )}
         <div className="p-5">{children}</div>
@@ -115,14 +144,14 @@ export function Modal({ open, onClose, title, children, width = 460 }: { open: b
   );
 }
 
-export function Confirm({ open, onClose, onOk, title, desc, okText = "确认", danger = true }:
+export function Confirm({ open, onClose, onOk, title, desc, okText, danger = true }:
   { open: boolean; onClose: () => void; onOk: () => void; title: string; desc?: ReactNode; okText?: string; danger?: boolean }) {
   return (
     <Modal open={open} onClose={onClose} title={title} width={400}>
       {desc && <div className="mb-5 text-[13px] leading-relaxed" style={{ color: "var(--ink-2)" }}>{desc}</div>}
       <div className="flex justify-end gap-2.5">
-        <button className="btn" onClick={onClose}>取消</button>
-        <button className={cx("btn", danger ? "btn-danger" : "btn-primary")} onClick={() => { onOk(); onClose(); }}>{okText}</button>
+        <button className="btn" onClick={onClose}>{tt("取消", "Cancel")}</button>
+        <button className={cx("btn", danger ? "btn-danger" : "btn-primary")} onClick={() => { onOk(); onClose(); }}>{okText ?? tt("确认", "Confirm")}</button>
       </div>
     </Modal>
   );
@@ -181,7 +210,7 @@ export function SectionTitle({ children, right }: { children: ReactNode; right?:
 }
 
 /* ================= 复制按钮（勾选动效） ================= */
-export function CopyBtn({ text, label = "复制", size = "md", className, onCopied }: { text: string; label?: string; size?: "sm" | "md"; className?: string; onCopied?: () => void }) {
+export function CopyBtn({ text, label, size = "md", className, onCopied }: { text: string; label?: string; size?: "sm" | "md"; className?: string; onCopied?: () => void }) {
   const [ok, setOk] = useState(false);
   return (
     <button
@@ -197,7 +226,7 @@ export function CopyBtn({ text, label = "复制", size = "md", className, onCopi
       }}
     >
       {ok ? <Icon name="check" size={13} className="check-draw" /> : <Icon name="copy" size={13} />}
-      {ok ? "已复制" : label}
+      {ok ? tt("已复制", "Copied") : label ?? tt("复制", "Copy")}
     </button>
   );
 }

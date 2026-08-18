@@ -1,9 +1,23 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
-import type { AppState, Prompt, Version, DebugRun, Tag, Vault, Group } from "./lib";
-import { uid, makeBackup, download } from "./lib";
+import type { AppState, Prompt, Version, DebugRun, Tag, Vault, Group, TypeDef, Lang } from "./lib";
+import { uid, makeBackup, download, DEFAULT_TYPES, registerTypes, setLang, getTypeDef, tt } from "./lib";
 import { seedState } from "./seed";
 import { SyncEngine, type SyncStatus, type SyncLog } from "./sync";
+
+/* ---------- 语言探测 Language detection ----------
+ * 首次打开按系统语言决定：中文系统 → zh，其余 → en。
+ * On first launch we follow the system language: zh systems get Chinese, others get English. */
+export const detectLang = (): Lang =>
+  (typeof navigator !== "undefined" && (navigator.language || "").toLowerCase().startsWith("zh")) ? "zh" : "en";
+
+/* 合并类型表：内置类型以默认值为底、叠加用户改动与自定义类型。
+ * Merge type registry: built-ins start from defaults, layered with user edits and custom types. */
+function mergeTypes(saved?: TypeDef[]): TypeDef[] {
+  const base = DEFAULT_TYPES.map((d) => saved?.find((s) => s.id === d.id) ?? d);
+  const customs = (saved ?? []).filter((s) => !DEFAULT_TYPES.some((d) => d.id === s.id));
+  return [...base, ...customs];
+}
 
 /* ---------- IndexedDB 轻封装（失败自动回退 localStorage） ---------- */
 const LS_KEY = "yanchi.state.v1";
@@ -33,7 +47,7 @@ async function idbSet(v: AppState) {
 }
 
 /* ---------- 路由与上下文 ---------- */
-export type RouteName = "home" | "vaults" | "list" | "sync" | "settings" | "trash";
+export type RouteName = "home" | "vaults" | "list" | "sync" | "settings" | "trash" | "types";
 export type SmartView = "recent-used" | "recent-edit" | "fav" | "draft" | "often" | "idle" | "versioned" | "pending-sync";
 export interface Route { name: RouteName; vaultId?: string; tagId?: string; smart?: SmartView; groupId?: string }
 
@@ -176,7 +190,7 @@ function useSyncApi(
 
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false);
-  const [state, setState] = useState<AppState>(() => seedState());
+  const [state, setState] = useState<AppState>(() => seedState(detectLang()));
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [route, setRoute] = useState<Route>({ name: "home" });
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -213,10 +227,31 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         } catch { data = null; }
       }
       if (!live) return;
-      if (data && data.vaults) setState({ ...seedState(), ...data, settings: { ...seedState().settings, ...data.settings } });
+      if (data && data.vaults) {
+        const seeded = seedState(data.settings?.lang ?? detectLang());
+        setState({
+          ...seeded, ...data,
+          types: mergeTypes(data.types),
+          settings: { ...seeded.settings, ...data.settings },
+        });
+      }
       setReady(true);
     })();
     return () => { live = false; };
+  }, []);
+
+  /* 语言与类型注册表同步到全局（供合成引擎与内联翻译读取）。
+   * Keep the global language + type registry in sync for the composer and inline i18n. */
+  useEffect(() => {
+    setLang(state.settings.lang ?? "zh");
+    registerTypes(state.types && state.types.length ? state.types : DEFAULT_TYPES);
+    document.documentElement.lang = state.settings.lang === "en" ? "en" : "zh-CN";
+  }, [state.settings.lang, state.types]);
+  /* 首屏立即同步一次，避免合成时使用默认值。Sync once on mount. */
+  useEffect(() => {
+    setLang(state.settings.lang ?? "zh");
+    registerTypes(state.types && state.types.length ? state.types : DEFAULT_TYPES);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   /* 自动保存（防抖，双写 IDB + localStorage） */
@@ -285,6 +320,35 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         download(name, JSON.stringify(makeBackup(stateRef.current, list, true), null, 2));
         toast("ok", `已导出全量备份（${list.length} 条）`);
       },
+      /* ---- 类型管理 Type management ---- */
+      saveType: (def: TypeDef) => {
+        setState((s) => {
+          const exists = s.types.some((t) => t.id === def.id);
+          return { ...s, types: exists ? s.types.map((t) => (t.id === def.id ? def : t)) : [...s.types, def] };
+        });
+      },
+      deleteType: (id: string) => {
+        setState((s) => ({ ...s, types: s.types.filter((t) => t.id !== id) }));
+      },
+      resetType: (id: string) => {
+        const d = DEFAULT_TYPES.find((t) => t.id === id);
+        if (d) setState((s) => ({ ...s, types: s.types.map((t) => (t.id === id ? d : t)) }));
+      },
+      moveType: (id: string, dir: -1 | 1) => {
+        setState((s) => {
+          const arr = [...s.types];
+          const i = arr.findIndex((t) => t.id === id);
+          const j = i + dir;
+          if (i < 0 || j < 0 || j >= arr.length) return s;
+          [arr[i], arr[j]] = [arr[j], arr[i]];
+          return { ...s, types: arr };
+        });
+      },
+      /* ---- 语言切换 Language switch ---- */
+      changeLang: (lang: Lang) => {
+        setLang(lang);
+        setState((s) => ({ ...s, settings: { ...s.settings, lang } }));
+      },
     }),
     [toast]
   );
@@ -308,15 +372,24 @@ export function useHelpers() {
   return ctx.helpers as {
     exportPrompts: (ids: string[], withVersions?: boolean) => void;
     exportAll: () => void;
+    saveType: (def: TypeDef) => void;
+    deleteType: (id: string) => void;
+    resetType: (id: string) => void;
+    moveType: (id: string, dir: -1 | 1) => void;
+    changeLang: (lang: Lang) => void;
   };
 }
 
 /* ---------- 常用领域操作 ---------- */
-export function newPrompt(vaultId: string, type: Prompt["type"], title = "未命名提示词"): Prompt {
+export function newPrompt(vaultId: string, type: Prompt["type"], title?: string): Prompt {
   const nowTs = Date.now();
+  const def = getTypeDef(type);
+  /* 依据类型字段结构初始化 chat/shots 数组。Init chat/shots arrays from the type's field structure. */
+  const fields: Record<string, any> = {};
+  def.fields.forEach((f) => { if (f.kind === "chat" || f.kind === "shots") fields[f.key] = []; });
   return {
-    id: uid(), vaultId, type, title, summary: "", body: "", negative: "",
-    fields: type === "chat" ? { turns: [] } : type === "agent" ? { examples: [] } : type === "video" ? { shots: [] } : {},
+    id: uid(), vaultId, type, title: title ?? tt("未命名提示词", "Untitled prompt"), summary: "", body: "", negative: "",
+    fields,
     params: {}, tagIds: [], favorite: false, pinned: false, deletedAt: null,
     useCount: 0, lastUsedAt: null, lastDebugAt: null,
     createdAt: nowTs, updatedAt: nowTs, presets: [], versions: [], runs: [], sync: "local",

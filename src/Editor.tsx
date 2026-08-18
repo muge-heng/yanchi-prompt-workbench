@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useStore, useHelpers, versionOf, type SmartView } from "./store";
-import { cx, fmtDate, uid, TYPE_META, TYPE_ORDER, type Prompt, type PromptType, type ChatMsg, type Shot, type Role } from "./lib";
+import { cx, fmtDate, uid, allTypes, getTypeDef, tl, th, tt, type Prompt, type ChatMsg, type Shot, type Role } from "./lib";
 import { Icon, TypeBadge, Confirm, Toggle } from "./ui";
 import Workbench from "./Workbench";
 
@@ -27,10 +27,15 @@ export default function Editor({ p }: { p: Prompt }) {
     saveT.current = setTimeout(() => setSaved("saved"), 650);
   }
 
-  const meta = TYPE_META[p.type];
+  const meta = getTypeDef(p.type);
   const vault = state.vaults.find((v) => v.id === p.vaultId);
   const groups = state.groups.filter((g) => g.vaultId === p.vaultId);
-  const bodyLabel = p.type === "agent" ? "System Prompt · 主体指令" : p.type === "chat" ? "补充说明（可选）" : p.type === "image" ? "补充描述（拼接到画面之后）" : p.type === "video" ? "补充描述（可选）" : "正文 · Prompt 内容";
+  const bodyLabel =
+    meta.mode === "agent" ? tt("System Prompt · 主体指令", "System Prompt · core instructions") :
+    meta.mode === "chat" ? tt("补充说明（可选）", "Extra notes (optional)") :
+    meta.mode === "image" ? tt("补充描述（拼接到画面之后）", "Extra description (appended to the scene)") :
+    meta.mode === "video" ? tt("补充描述（可选）", "Extra description (optional)") :
+    tt("正文 · Prompt 内容", "Body · prompt content");
 
   const setField = (key: string, val: any) => up({ fields: { ...p.fields, [key]: val } });
 
@@ -104,16 +109,16 @@ export default function Editor({ p }: { p: Prompt }) {
 
         {/* 类型切换 */}
         <div className="mt-3 flex flex-wrap items-center gap-1.5">
-          <span className="text-[11px]" style={{ color: "var(--ink-3)" }}>类型</span>
-          {TYPE_ORDER.map((t) => (
-            <button key={t} className={cx("chip chip-btn !py-[2px]", p.type === t && "font-bold")}
-              style={p.type === t ? { borderColor: TYPE_META[t].color, color: TYPE_META[t].color, background: "color-mix(in srgb, " + TYPE_META[t].color + " 10%, var(--card))" } : undefined}
-              onClick={() => { if (t !== p.type) { up({ type: t }); toast("info", `已切换为 ${TYPE_META[t].label} 类型，字段结构随之变化`); } }}>
-              <Icon name={TYPE_META[t].icon} size={11} /> {TYPE_META[t].label}
+          <span className="text-[11px]" style={{ color: "var(--ink-3)" }}>{tt("类型", "Type")}</span>
+          {allTypes().map((td) => (
+            <button key={td.id} className={cx("chip chip-btn !py-[2px]", p.type === td.id && "font-bold")}
+              style={p.type === td.id ? { borderColor: td.color, color: td.color, background: "color-mix(in srgb, " + td.color + " 10%, var(--card))" } : undefined}
+              onClick={() => { if (td.id !== p.type) { up({ type: td.id }); toast("info", tt(`已切换为 ${tl(td)} 类型，字段结构随之变化`, `Switched to ${tl(td)} — field structure updated`)); } }}>
+              <Icon name={td.icon} size={11} /> {tl(td)}
             </button>
           ))}
-          <button className="chip chip-btn ml-auto !py-[2px] !text-[10.5px]" title="另存为副本" onClick={() => duplicate()}>
-            <Icon name="copy" size={10} /> 另存为副本
+          <button className="chip chip-btn ml-auto !py-[2px] !text-[10.5px]" title={tt("另存为副本", "Save as copy")} onClick={() => duplicate()}>
+            <Icon name="copy" size={10} /> {tt("另存为副本", "Save as copy")}
           </button>
         </div>
 
@@ -180,11 +185,11 @@ export default function Editor({ p }: { p: Prompt }) {
 
             {/* 类型字段 */}
             {meta.fields.map((f) => (
-              <FieldCard key={f.key} title={f.label} icon={f.kind === "chat" ? "chat" : f.kind === "shots" ? "video" : "pen"}
-                hint={f.hint} defaultOpen={["role", "subject", "goal", "system", "firstFrame", "theme"].includes(f.key)}>
+              <FieldCard key={f.key} title={tl(f)} icon={f.icon || (f.kind === "chat" ? "chat" : f.kind === "shots" ? "video" : "pen")}
+                hint={th(f)} defaultOpen={["role", "subject", "goal", "system", "firstFrame", "theme"].includes(f.key)}>
                 {f.kind === "text" && (
                   <div>
-                    <input className="input" value={p.fields[f.key] || ""} placeholder={f.hint || ""} onChange={(e) => setField(f.key, e.target.value)} />
+                    <input className="input" value={p.fields[f.key] || ""} placeholder={th(f)} onChange={(e) => setField(f.key, e.target.value)} />
                     {f.quick && (
                       <div className="mt-2 flex flex-wrap gap-1.5">
                         {f.quick.map((qk) => (
@@ -201,7 +206,7 @@ export default function Editor({ p }: { p: Prompt }) {
                   </div>
                 )}
                 {f.kind === "area" && (
-                  <textarea className="textarea" value={p.fields[f.key] || ""} placeholder={f.hint || ""} onChange={(e) => setField(f.key, e.target.value)} />
+                  <textarea className="textarea" value={p.fields[f.key] || ""} placeholder={th(f)} onChange={(e) => setField(f.key, e.target.value)} />
                 )}
                 {f.kind === "chat" && <ChatEditor msgs={p.fields[f.key] || []} onChange={(v) => setField(f.key, v)} />}
                 {f.kind === "shots" && <ShotsEditor shots={p.fields[f.key] || []} onChange={(v) => setField(f.key, v)} />}
@@ -227,7 +232,7 @@ export default function Editor({ p }: { p: Prompt }) {
               <div className="grid grid-cols-2 gap-3">
                 {meta.params.map((pm) => (
                   <div key={pm.key}>
-                    <label className="mb-1 block text-[11px]" style={{ color: "var(--ink-2)" }}>{pm.label}</label>
+                    <label className="mb-1 block text-[11px]" style={{ color: "var(--ink-2)" }}>{tl(pm)}</label>
                     <input className="input !py-[6px] !text-[12px]" placeholder={pm.ph || ""} value={p.params[pm.key] || ""}
                       onChange={(e) => up({ params: { ...p.params, [pm.key]: e.target.value } })} />
                   </div>

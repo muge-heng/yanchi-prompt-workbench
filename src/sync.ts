@@ -1,4 +1,5 @@
 import type { Prompt } from "./lib";
+import { tt } from "./lib";
 
 export type SyncStatus = "off" | "connecting" | "online" | "reconnecting" | "error";
 
@@ -173,12 +174,15 @@ export class SyncEngine {
   }
 }
 
-export const SYNC_STATUS_TEXT: Record<SyncStatus, string> = {
-  off: "未连接",
-  connecting: "正在连接",
-  online: "已连接",
-  reconnecting: "重连中",
-  error: "连接失败",
+/* 连接状态文案（中英双语）。Connection status labels (bilingual). */
+export const syncStatusText = (s: SyncStatus): string => {
+  switch (s) {
+    case "off": return tt("未连接", "Not connected");
+    case "connecting": return tt("正在连接", "Connecting");
+    case "online": return tt("已连接", "Connected");
+    case "reconnecting": return tt("重连中", "Reconnecting");
+    case "error": return tt("连接失败", "Connection failed");
+  }
 };
 
 export const SYNC_STATUS_COLOR: Record<SyncStatus, string> = {
