@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useStore, useHelpers, versionOf, type SmartView } from "./store";
-import { cx, fmtDate, uid, allTypes, getTypeDef, tl, th, tt, type Prompt, type ChatMsg, type Shot, type Role } from "./lib";
+import { cx, fmtDate, uid, allTypes, getTypeDef, getLang, tl, th, tt, type Prompt, type ChatMsg, type Shot, type Role } from "./lib";
 import { Icon, TypeBadge, Confirm, Toggle } from "./ui";
 import Workbench from "./Workbench";
 
@@ -44,28 +44,28 @@ export default function Editor({ p }: { p: Prompt }) {
       {/* 头部 */}
       <div className="flex-none border-b px-5 pb-0 pt-4" style={{ borderColor: "var(--line)" }}>
         <div className="flex items-center gap-2">
-          <button className="icon-btn lg:hidden" onClick={() => select(null)} title="返回列表"><Icon name="chevL" size={16} /></button>
+          <button className="icon-btn lg:hidden" onClick={() => select(null)} title={tt("返回列表", "Back to list")}><Icon name="chevL" size={16} /></button>
           <TypeBadge type={p.type} />
           <div className="ml-auto flex items-center gap-2">
             <span className={cx("flex items-center gap-1.5 text-[11px] transition-opacity duration-500", (saved === "idle" || !state.settings.saveFlash) && "opacity-0")}
               style={{ color: saved === "saved" ? "var(--ok)" : "var(--ink-3)" }}>
-              {saved === "saving" ? <><Icon name="clock" size={11} /> 正在保存…</> : <><Icon name="check" size={11} className="check-draw" /> 已保存到本机</>}
+              {saved === "saving" ? <><Icon name="clock" size={11} /> {tt("正在保存…", "Saving…")}</> : <><Icon name="check" size={11} className="check-draw" /> {tt("已保存到本机", "Saved on this device")}</>}
             </span>
-            <button className={cx("icon-btn", focus && "!bg-[#f0e6cd] !text-[var(--ink)]")} title="专注模式（⌘\）" onClick={() => setFocus(!focus)}><Icon name="eye" size={15} /></button>
-            <button className="icon-btn" title="导出这条" onClick={() => helpers.exportPrompts([p.id])}><Icon name="download" size={14} /></button>
-            <button className="icon-btn hover:!text-[var(--err)]" title="移入回收站" onClick={() => setConfirmTrash(true)}><Icon name="trash" size={14} /></button>
+            <button className={cx("icon-btn", focus && "!bg-[#f0e6cd] !text-[var(--ink)]")} title={tt("专注模式（⌘\\）", "Focus mode (⌘\\)")} onClick={() => setFocus(!focus)}><Icon name="eye" size={15} /></button>
+            <button className="icon-btn" title={tt("导出这条", "Export this prompt")} onClick={() => helpers.exportPrompts([p.id])}><Icon name="download" size={14} /></button>
+            <button className="icon-btn hover:!text-[var(--err)]" title={tt("移入回收站", "Move to Trash")} onClick={() => setConfirmTrash(true)}><Icon name="trash" size={14} /></button>
           </div>
         </div>
         <input
           className="title-serif mt-2 w-full border-none bg-transparent text-[21px] font-black outline-none placeholder:opacity-40"
           style={{ color: "var(--ink)" }}
-          value={p.title} placeholder="为它起个名字"
+          value={p.title} placeholder={tt("为它起个名字", "Give it a name")}
           onChange={(e) => up({ title: e.target.value })}
         />
         <input
           className="mt-1 w-full border-none bg-transparent text-[12px] outline-none placeholder:opacity-50"
           style={{ color: "var(--ink-2)" }}
-          value={p.summary} placeholder="一句话简介：它解决什么问题？"
+          value={p.summary} placeholder={tt("一句话简介：它解决什么问题？", "One-line summary: what problem does it solve?")}
           onChange={(e) => up({ summary: e.target.value })}
         />
 
@@ -81,7 +81,7 @@ export default function Editor({ p }: { p: Prompt }) {
           <span style={{ color: "var(--line-2)" }}>›</span>
           <select className="select !w-auto !border-0 !bg-transparent !p-0 !text-[12px] !shadow-none" style={{ color: p.groupId ? "var(--ink)" : "var(--ink-3)" }}
             value={p.groupId || ""} onChange={(e) => up({ groupId: e.target.value || undefined })}>
-            <option value="">未分组</option>
+            <option value="">{tt("未分组", "No group")}</option>
             {groups.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
           </select>
           <span style={{ color: "var(--line-2)" }}>·</span>
@@ -89,7 +89,7 @@ export default function Editor({ p }: { p: Prompt }) {
             {p.tagIds.map((tid) => {
               const t = state.tags.find((x) => x.id === tid);
               return t ? (
-                <button key={tid} className="chip chip-btn !py-[1.5px] group/tg" title="点击移除"
+                <button key={tid} className="chip chip-btn !py-[1.5px] group/tg" title={tt("点击移除", "Click to remove")}
                   onClick={() => up({ tagIds: p.tagIds.filter((x) => x !== tid) })}>
                   <span className="dot !h-[5px] !w-[5px]" style={{ background: t.color }} />{t.name}
                   <Icon name="close" size={8} className="opacity-0 group-hover/tg:opacity-70" />
@@ -97,12 +97,12 @@ export default function Editor({ p }: { p: Prompt }) {
               ) : null;
             })}
             {tagInput ? (
-              <input className="input !w-[90px] !py-[2px] !text-[11px]" autoFocus placeholder="回车添加" value={tagName}
+              <input className="input !w-[90px] !py-[2px] !text-[11px]" autoFocus placeholder={tt("回车添加", "Enter to add")} value={tagName}
                 onChange={(e) => setTagName(e.target.value)}
                 onBlur={() => { addTag(); setTagInput(false); }}
                 onKeyDown={(e) => { if (e.key === "Enter") { addTag(); setTagInput(false); } if (e.key === "Escape") setTagInput(false); }} />
             ) : (
-              <button className="chip chip-btn !py-[1.5px] !text-[10.5px]" onClick={() => setTagInput(true)}><Icon name="plus" size={9} /> 标签</button>
+              <button className="chip chip-btn !py-[1.5px] !text-[10.5px]" onClick={() => setTagInput(true)}><Icon name="plus" size={9} /> {tt("标签", "Tag")}</button>
             )}
           </div>
         </div>
@@ -124,7 +124,7 @@ export default function Editor({ p }: { p: Prompt }) {
 
         {/* 页签 */}
         <div className="mt-3 flex items-end gap-1 px-1">
-          {([["edit", "编辑", "pen"], ["bench", "工作台", "bolt"], ["versions", `历史 ${p.versions.length || ""}`, "history"]] as [Tab, string, string][]).map(([k, label, ic]) => (
+          {([["edit", tt("编辑", "Edit"), "pen"], ["bench", tt("工作台", "Workbench"), "bolt"], ["versions", `${tt("历史", "History")} ${p.versions.length || ""}`, "history"]] as [Tab, string, string][]).map(([k, label, ic]) => (
             <button key={k} className={cx("folder-tab flex items-center gap-1.5", tab === k && "on")} onClick={() => setTab(k)}>
               <Icon name={ic} size={12.5} /> {label}
             </button>
@@ -139,20 +139,20 @@ export default function Editor({ p }: { p: Prompt }) {
         ) : tab === "versions" ? (
           <div className="p-5">
             <div className="card mb-4 p-4">
-              <div className="mb-2 text-[12.5px] font-medium">把当前状态存为一个版本</div>
+              <div className="mb-2 text-[12.5px] font-medium">{tt("把当前状态存为一个版本", "Save the current state as a version")}</div>
               <div className="flex gap-2">
-                <input className="input" placeholder="版本备注，如：v3 · 加入工具规则" value={verLabel} onChange={(e) => setVerLabel(e.target.value)} />
+                <input className="input" placeholder={tt("版本备注，如：v3 · 加入工具规则", "Version note, e.g. v3 · added tool rules")} value={verLabel} onChange={(e) => setVerLabel(e.target.value)} />
                 <button className="btn btn-primary flex-none" onClick={() => {
                   const v = versionOf(p, verLabel.trim() || undefined);
                   up({ versions: [v, ...p.versions] });
                   setVerLabel("");
-                  toast("ok", `已存为「${v.label}」`);
-                }}><Icon name="history" size={13} /> 存档</button>
+                  toast("ok", tt(`已存为「${v.label}」`, `Saved as “${v.label}”`));
+                }}><Icon name="history" size={13} /> {tt("存档", "Save version")}</button>
               </div>
             </div>
             {p.versions.length === 0 ? (
               <div className="py-10 text-center text-[12.5px]" style={{ color: "var(--ink-3)" }}>
-                还没有版本。调试顺手时存一个版本，日后可以安心回滚。
+                {tt("还没有版本。调试顺手时存一个版本，日后可以安心回滚。", "No versions yet. Save one when a run feels right — you can roll back anytime.")}
               </div>
             ) : (
               <div className="space-y-2.5">
@@ -163,12 +163,12 @@ export default function Editor({ p }: { p: Prompt }) {
                         style={{ borderColor: "var(--line-2)", background: "var(--card-2)", color: "var(--brass)" }}>{p.versions.length - i}</span>
                       <div className="min-w-0 flex-1">
                         <div className="truncate text-[13px] font-medium">{v.label}</div>
-                        <div className="text-[10.5px] tabular-nums" style={{ color: "var(--ink-3)" }}>{fmtDate(v.at)} · 正文 {v.body.length} 字 · 字段 {Object.values(v.fields).filter((x) => x && (typeof x === "string" ? x.trim() : Array.isArray(x) ? x.length : false)).length} 项</div>
+                        <div className="text-[10.5px] tabular-nums" style={{ color: "var(--ink-3)" }}>{fmtDate(v.at)} · {v.body.length} {tt("字", "chars")} · {Object.values(v.fields).filter((x) => x && (typeof x === "string" ? x.trim() : Array.isArray(x) ? x.length : false)).length} {tt("字段", "fields")}</div>
                       </div>
                       <button className="btn !py-[5px] !text-[11.5px]" onClick={() => {
                         up({ body: v.body, fields: JSON.parse(JSON.stringify(v.fields)), negative: v.negative });
-                        toast("ok", `已回滚到「${v.label}」，当前内容已被替换`);
-                      }}><Icon name="undo" size={12} /> 回滚</button>
+                        toast("ok", tt(`已回滚到「${v.label}」，当前内容已被替换`, `Rolled back to “${v.label}” — current content replaced`));
+                      }}><Icon name="undo" size={12} /> {tt("回滚", "Roll back")}</button>
                     </div>
                   </div>
                 ))}
@@ -179,7 +179,7 @@ export default function Editor({ p }: { p: Prompt }) {
           <div className="space-y-4 p-5">
             {/* 正文 */}
             <FieldCard title={bodyLabel} icon="doc" defaultOpen>
-              <textarea className="textarea mono-area min-h-[150px]" value={p.body} placeholder={p.type === "custom" ? "直接写你的 Prompt，支持 {{变量}} 占位…" : "主体内容…"}
+              <textarea className="textarea mono-area min-h-[150px]" value={p.body} placeholder={p.type === "custom" ? tt("直接写你的 Prompt，支持 {{变量}} 占位…", "Write your prompt here — {{variables}} supported…") : tt("主体内容…", "Main content…")}
                 onChange={(e) => up({ body: e.target.value })} />
             </FieldCard>
 
@@ -215,10 +215,13 @@ export default function Editor({ p }: { p: Prompt }) {
 
             {/* Negative */}
             {p.type === "image" && (
-              <FieldCard title="Negative Prompt" icon="close" hint="不希望出现的元素" defaultOpen>
-                <textarea className="textarea" value={p.negative} placeholder="低质量，变形，多余手指…" onChange={(e) => up({ negative: e.target.value })} />
+              <FieldCard title="Negative Prompt" icon="close" hint={tt("不希望出现的元素", "Elements to avoid")} defaultOpen>
+                <textarea className="textarea" value={p.negative} placeholder={tt("低质量，变形，多余手指…", "low quality, deformed, extra fingers…")} onChange={(e) => up({ negative: e.target.value })} />
                 <div className="mt-2 flex flex-wrap gap-1.5">
-                  {["低质量", "变形", "多余手指", "水印", "过曝", "塑料感", "杂乱背景"].map((qk) => (
+                  {(getLang() === "en"
+                    ? ["low quality", "deformed", "extra fingers", "watermark", "overexposed", "plastic", "cluttered background"]
+                    : ["低质量", "变形", "多余手指", "水印", "过曝", "塑料感", "杂乱背景"]
+                  ).map((qk) => (
                     <button key={qk} className="chip chip-btn !py-[1.5px] !text-[10.5px]" onClick={() => {
                       up({ negative: p.negative ? (p.negative.includes(qk) ? p.negative : p.negative + "，" + qk) : qk });
                     }}><Icon name="plus" size={9} /> {qk}</button>
@@ -228,7 +231,7 @@ export default function Editor({ p }: { p: Prompt }) {
             )}
 
             {/* 参数 */}
-            <FieldCard title="参数" icon="settings" defaultOpen={p.type !== "custom"}>
+            <FieldCard title={tt("参数", "Parameters")} icon="settings" defaultOpen={p.type !== "custom"}>
               <div className="grid grid-cols-2 gap-3">
                 {meta.params.map((pm) => (
                   <div key={pm.key}>
@@ -243,25 +246,25 @@ export default function Editor({ p }: { p: Prompt }) {
             {/* 同步与状态 */}
             <div className="card flex flex-wrap items-center gap-x-5 gap-y-2 p-4 text-[12px]" style={{ color: "var(--ink-2)" }}>
               <label className="flex items-center gap-2">
-                <Toggle on={p.sync !== "local"} onChange={(b) => { up({ sync: b ? "pending" : "local" }); toast("info", b ? "已加入同步范围" : "已移出同步范围，仅保存在本机"); }} label="同步" />
-                纳入局域网同步范围
+                <Toggle on={p.sync !== "local"} onChange={(b) => { up({ sync: b ? "pending" : "local" }); toast("info", b ? tt("已加入同步范围", "Added to sync scope") : tt("已移出同步范围，仅保存在本机", "Removed from sync scope — local only")); }} label={tt("同步", "Sync")} />
+                {tt("纳入局域网同步范围", "Include in LAN sync")}
               </label>
-              <span className="tabular-nums">创建 {fmtDate(p.createdAt)}</span>
-              <span className="tabular-nums">更新 {fmtDate(p.updatedAt)}</span>
-              <span className="tabular-nums">最近调试 {p.lastDebugAt ? fmtDate(p.lastDebugAt) : "—"}</span>
-              <span className="tabular-nums">用过 {p.useCount} 次</span>
+              <span className="tabular-nums">{tt("创建", "Created")} {fmtDate(p.createdAt)}</span>
+              <span className="tabular-nums">{tt("更新", "Updated")} {fmtDate(p.updatedAt)}</span>
+              <span className="tabular-nums">{tt("最近调试", "Last debug")} {p.lastDebugAt ? fmtDate(p.lastDebugAt) : "—"}</span>
+              <span className="tabular-nums">{p.useCount} {tt("次使用", "uses")}</span>
             </div>
           </div>
         )}
       </div>
 
-      <Confirm open={confirmTrash} onClose={() => setConfirmTrash(false)} title="移入回收站" okText="移入回收站" danger={false}
-        desc={`「${p.title}」将移入回收站，30 天内可随时恢复。`}
+      <Confirm open={confirmTrash} onClose={() => setConfirmTrash(false)} title={tt("移入回收站", "Move to Trash")} okText={tt("移入回收站", "Move to Trash")} danger={false}
+        desc={tt(`「${p.title}」将移入回收站，30 天内可随时恢复。`, `“${p.title}” will move to Trash — restorable within 30 days.`)}
         onOk={() => {
           set((s) => ({ ...s, prompts: s.prompts.map((x) => (x.id === p.id ? { ...x, deletedAt: Date.now() } : x)) }));
           select(null); setFocus(false);
-          toast("ok", "已移入回收站", {
-            label: "撤销", fn: () => set((s) => ({ ...s, prompts: s.prompts.map((x) => (x.id === p.id ? { ...x, deletedAt: null } : x)) })),
+          toast("ok", tt("已移入回收站", "Moved to Trash"), {
+            label: tt("撤销", "Undo"), fn: () => set((s) => ({ ...s, prompts: s.prompts.map((x) => (x.id === p.id ? { ...x, deletedAt: null } : x)) })),
           });
         }} />
     </div>
@@ -277,18 +280,18 @@ export default function Editor({ p }: { p: Prompt }) {
       const t = { id: uid(), name: n, color: "var(--moss)" };
       set((s) => ({ ...s, tags: [...s.tags, t] }));
       up({ tagIds: [...p.tagIds, t.id] });
-      toast("ok", `已创建标签「${n}」`);
+      toast("ok", tt(`已创建标签「${n}」`, `Tag “${n}” created`));
     }
     setTagName("");
   }
 
   function duplicate() {
     const copy: Prompt = {
-      ...JSON.parse(JSON.stringify(p)), id: uid(), title: p.title + "（副本）",
+      ...JSON.parse(JSON.stringify(p)), id: uid(), title: p.title + tt("（副本）", " (copy)"),
       createdAt: Date.now(), updatedAt: Date.now(), useCount: 0, runs: [], sync: "local", favorite: false,
     };
     set((s) => ({ ...s, prompts: [copy, ...s.prompts] }));
-    toast("ok", "已另存为副本");
+    toast("ok", tt("已另存为副本", "Saved as a copy"));
   }
 }
 
@@ -318,7 +321,7 @@ export function FieldCard({ title, icon, hint, defaultOpen = false, children }:
 /* ---------- 对话消息编辑器 ---------- */
 export function ChatEditor({ msgs, onChange }: { msgs: ChatMsg[]; onChange: (v: ChatMsg[]) => void }) {
   const roles: Role[] = ["user", "assistant", "system"];
-  const roleText: Record<Role, string> = { user: "用户", assistant: "助手", system: "系统" };
+  const roleText: Record<Role, string> = { user: tt("用户", "User"), assistant: tt("助手", "Assistant"), system: tt("系统", "System") };
   const roleColor: Record<Role, string> = { user: "var(--slate)", assistant: "var(--moss)", system: "var(--sand)" };
   return (
     <div className="space-y-2.5">
@@ -335,17 +338,17 @@ export function ChatEditor({ msgs, onChange }: { msgs: ChatMsg[]; onChange: (v: 
               ))}
             </div>
             <span className="ml-auto flex gap-0.5">
-              <button className="icon-btn !h-6 !w-6" disabled={i === 0} onClick={() => onChange(move(msgs, i, -1))} title="上移"><Icon name="chevD" size={11} className="rotate-180" /></button>
-              <button className="icon-btn !h-6 !w-6" disabled={i === msgs.length - 1} onClick={() => onChange(move(msgs, i, 1))} title="下移"><Icon name="chevD" size={11} /></button>
-              <button className="icon-btn !h-6 !w-6 hover:!text-[var(--err)]" onClick={() => onChange(msgs.filter((x) => x.id !== m.id))} title="删除"><Icon name="close" size={11} /></button>
+              <button className="icon-btn !h-6 !w-6" disabled={i === 0} onClick={() => onChange(move(msgs, i, -1))} title={tt("上移", "Move up")}><Icon name="chevD" size={11} className="rotate-180" /></button>
+              <button className="icon-btn !h-6 !w-6" disabled={i === msgs.length - 1} onClick={() => onChange(move(msgs, i, 1))} title={tt("下移", "Move down")}><Icon name="chevD" size={11} /></button>
+              <button className="icon-btn !h-6 !w-6 hover:!text-[var(--err)]" onClick={() => onChange(msgs.filter((x) => x.id !== m.id))} title={tt("删除", "Delete")}><Icon name="close" size={11} /></button>
             </span>
           </div>
-          <textarea className="textarea !min-h-[52px] !border-0 !bg-transparent !p-1 !shadow-none" value={m.content} placeholder="消息内容，支持 {{变量}}"
+          <textarea className="textarea !min-h-[52px] !border-0 !bg-transparent !p-1 !shadow-none" value={m.content} placeholder={tt("消息内容，支持 {{变量}}", "Message content — {{variables}} supported")}
             onChange={(e) => onChange(msgs.map((x) => (x.id === m.id ? { ...x, content: e.target.value } : x)))} />
         </div>
       ))}
       <button className="btn w-full !py-[7px] !text-[12px]" onClick={() => onChange([...msgs, { id: uid(), role: msgs.length % 2 === 0 ? "user" : "assistant", content: "" }])}>
-        <Icon name="plus" size={12} /> 添加一条消息
+        <Icon name="plus" size={12} /> {tt("添加一条消息", "Add a message")}
       </button>
     </div>
   );
@@ -367,20 +370,20 @@ function ShotsEditor({ shots, onChange }: { shots: Shot[]; onChange: (v: Shot[])
         <div key={s.id} className="rounded-xl border p-2.5" style={{ borderColor: "var(--line)", background: "var(--card-2)" }}>
           <div className="mb-1.5 flex items-center gap-2">
             <span className="title-serif flex h-6 w-6 flex-none items-center justify-center rounded-md text-[11px] font-black text-[#fdf6ea]" style={{ background: "var(--plum)" }}>{i + 1}</span>
-            <input className="input !w-[110px] !py-[4px] !text-[11.5px]" placeholder="镜头名" value={s.label} onChange={(e) => onChange(shots.map((x) => (x.id === s.id ? { ...x, label: e.target.value } : x)))} />
-            <input className="input !w-[70px] !py-[4px] !text-[11.5px]" placeholder="时长" value={s.secs} onChange={(e) => onChange(shots.map((x) => (x.id === s.id ? { ...x, secs: e.target.value } : x)))} />
+            <input className="input !w-[110px] !py-[4px] !text-[11.5px]" placeholder={tt("镜头名", "Shot name")} value={s.label} onChange={(e) => onChange(shots.map((x) => (x.id === s.id ? { ...x, label: e.target.value } : x)))} />
+            <input className="input !w-[70px] !py-[4px] !text-[11.5px]" placeholder={tt("时长", "Length")} value={s.secs} onChange={(e) => onChange(shots.map((x) => (x.id === s.id ? { ...x, secs: e.target.value } : x)))} />
             <span className="ml-auto flex gap-0.5">
-              <button className="icon-btn !h-6 !w-6" disabled={i === 0} onClick={() => onChange(move(shots, i, -1))} title="上移"><Icon name="chevD" size={11} className="rotate-180" /></button>
-              <button className="icon-btn !h-6 !w-6" disabled={i === shots.length - 1} onClick={() => onChange(move(shots, i, 1))} title="下移"><Icon name="chevD" size={11} /></button>
-              <button className="icon-btn !h-6 !w-6 hover:!text-[var(--err)]" onClick={() => onChange(shots.filter((x) => x.id !== s.id))} title="删除"><Icon name="close" size={11} /></button>
+              <button className="icon-btn !h-6 !w-6" disabled={i === 0} onClick={() => onChange(move(shots, i, -1))} title={tt("上移", "Move up")}><Icon name="chevD" size={11} className="rotate-180" /></button>
+              <button className="icon-btn !h-6 !w-6" disabled={i === shots.length - 1} onClick={() => onChange(move(shots, i, 1))} title={tt("下移", "Move down")}><Icon name="chevD" size={11} /></button>
+              <button className="icon-btn !h-6 !w-6 hover:!text-[var(--err)]" onClick={() => onChange(shots.filter((x) => x.id !== s.id))} title={tt("删除", "Delete")}><Icon name="close" size={11} /></button>
             </span>
           </div>
-          <textarea className="textarea !min-h-[44px] !border-0 !bg-transparent !p-1 !shadow-none" placeholder="这个镜头的画面与动作…" value={s.content}
+          <textarea className="textarea !min-h-[44px] !border-0 !bg-transparent !p-1 !shadow-none" placeholder={tt("这个镜头的画面与动作…", "What happens in this shot…")} value={s.content}
             onChange={(e) => onChange(shots.map((x) => (x.id === s.id ? { ...x, content: e.target.value } : x)))} />
         </div>
       ))}
       <button className="btn w-full !py-[7px] !text-[12px]" onClick={() => onChange([...shots, { id: uid(), label: "", content: "", secs: "3s" }])}>
-        <Icon name="plus" size={12} /> 添加分镜
+        <Icon name="plus" size={12} /> {tt("添加分镜", "Add a shot")}
       </button>
     </div>
   );

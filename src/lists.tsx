@@ -123,21 +123,22 @@ export function VaultListPage() {
   function saveName() {
     if (!editing || !name.trim()) return;
     set((s) => ({ ...s, vaults: s.vaults.map((v) => (v.id === editing.id ? { ...v, name: name.trim() } : v)) }));
-    toast("ok", "已保存");
+    toast("ok", tt("已保存", "Saved"));
     setEditing(null);
   }
 }
 
 /* ================= 智能视图表题 ================= */
-const SMART_LABEL: Record<SmartView, { t: string; d: string; icon: string }> = {
-  "recent-used": { t: "最近使用", d: "近 7 天试运行或复制过的提示词", icon: "clock" },
-  "recent-edit": { t: "最近编辑", d: "近 7 天改动过的内容", icon: "pen" },
-  fav: { t: "收藏", d: "你标过星号的常用资产", icon: "star" },
-  draft: { t: "草稿", d: "带「待测试」标签、尚未成熟的内容", icon: "doc" },
-  often: { t: "高频使用", d: "使用次数 ≥ 10 的主力提示词", icon: "bolt" },
-  idle: { t: "长期未动", d: "超过 30 天未编辑，也许可以归档或打磨", icon: "eye" },
-  versioned: { t: "有版本历史", d: "存过版本、可回滚的提示词", icon: "history" },
-  "pending-sync": { t: "待同步", d: "修改尚未推送到局域网设备", icon: "sync" },
+/* 智能视图标题（读取时按当前语言返回）。Smart-view titles, localized on read. */
+const SMART_LABEL: Record<SmartView, { t: () => string; d: () => string; icon: string }> = {
+  "recent-used": { t: () => tt("最近使用", "Recently used"), d: () => tt("近 7 天试运行或复制过的提示词", "Trial-run or copied in the last 7 days"), icon: "clock" },
+  "recent-edit": { t: () => tt("最近编辑", "Recently edited"), d: () => tt("近 7 天改动过的内容", "Changed in the last 7 days"), icon: "pen" },
+  fav: { t: () => tt("收藏", "Favorites"), d: () => tt("你标过星号的常用资产", "The assets you've starred"), icon: "star" },
+  draft: { t: () => tt("草稿", "Drafts"), d: () => tt("带「待测试」标签、尚未成熟的内容", "Tagged “Needs testing”, not yet mature"), icon: "doc" },
+  often: { t: () => tt("高频使用", "Most used"), d: () => tt("使用次数 ≥ 10 的主力提示词", "Used 10 times or more"), icon: "bolt" },
+  idle: { t: () => tt("长期未动", "Long idle"), d: () => tt("超过 30 天未编辑，也许可以归档或打磨", "Untouched for 30+ days — archive or polish?"), icon: "eye" },
+  versioned: { t: () => tt("有版本历史", "Has versions"), d: () => tt("存过版本、可回滚的提示词", "Versioned prompts you can roll back"), icon: "history" },
+  "pending-sync": { t: () => tt("待同步", "Pending sync"), d: () => tt("修改尚未推送到局域网设备", "Edits not yet pushed to LAN devices"), icon: "sync" },
 };
 
 /* ================= 提示词列表 ================= */
@@ -169,7 +170,7 @@ export function PromptListPage() {
     if (route.tagId) list = list.filter((p) => p.tagIds.includes(route.tagId!));
     if (route.smart) {
       const W = 7 * 86_400_000, M = 30 * 86_400_000;
-      const testTag = (p: Prompt) => p.tagIds.some((t) => state.tags.find((x) => x.id === t)?.name === "待测试");
+      const testTag = (p: Prompt) => p.tagIds.some((t) => ["待测试", "Needs testing"].includes(state.tags.find((x) => x.id === t)?.name || ""));
       switch (route.smart) {
         case "recent-used": list = list.filter((p) => p.lastUsedAt && Date.now() - p.lastUsedAt < W); break;
         case "recent-edit": list = list.filter((p) => Date.now() - p.updatedAt < W); break;
@@ -198,8 +199,13 @@ export function PromptListPage() {
     });
   }, [base, route, typeF, q, sort, state.tags]);
 
-  const title = isTrash ? "回收站" : vault?.name || group?.name || tag?.name || smart?.t || "全部提示词";
-  const desc = isTrash ? "删除的内容会在这里保留，可随时恢复" : vault ? vault.desc : group ? `${state.vaults.find((v) => v.id === group.vaultId)?.name ?? ""} · 分组` : tag ? `标签筛选 · ${tag.name}` : smart?.d;
+  const title = isTrash ? tt("回收站", "Trash") : vault?.name || group?.name || tag?.name || smart?.t() || tt("全部提示词", "All prompts");
+  const desc = isTrash
+    ? tt("删除的内容会在这里保留，可随时恢复", "Deleted items stay here and can be restored anytime")
+    : vault ? vault.desc
+    : group ? `${state.vaults.find((v) => v.id === group.vaultId)?.name ?? ""} · ${tt("分组", "group")}`
+    : tag ? `${tt("标签筛选", "Tag filter")} · ${tag.name}`
+    : smart?.d();
 
   function toggleSel(id: string) {
     setSel((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
@@ -208,8 +214,8 @@ export function PromptListPage() {
   function trash(ids: string[]) {
     set((s) => ({ ...s, prompts: s.prompts.map((p) => (ids.includes(p.id) ? { ...p, deletedAt: Date.now() } : p)) }));
     setSel([]);
-    toast("ok", `已移入回收站（${ids.length} 条），30 天内可恢复`, {
-      label: "撤销",
+    toast("ok", tt(`已移入回收站（${ids.length} 条），30 天内可恢复`, `Moved ${ids.length} item${ids.length > 1 ? "s" : ""} to Trash — restorable for 30 days`), {
+      label: tt("撤销", "Undo"),
       fn: () => set((s) => ({ ...s, prompts: s.prompts.map((p) => (ids.includes(p.id) ? { ...p, deletedAt: null } : p)) })),
     });
   }
@@ -217,18 +223,18 @@ export function PromptListPage() {
   function restore(ids: string[]) {
     set((s) => ({ ...s, prompts: s.prompts.map((p) => (ids.includes(p.id) ? { ...p, deletedAt: null } : p)) }));
     setSel([]);
-    toast("ok", `已恢复 ${ids.length} 条`);
+    toast("ok", tt(`已恢复 ${ids.length} 条`, `Restored ${ids.length} item${ids.length > 1 ? "s" : ""}`));
   }
 
   function purge(ids: string[]) {
     set((s) => ({ ...s, prompts: s.prompts.filter((p) => !ids.includes(p.id)) }));
     setSel([]);
-    toast("info", `已彻底删除 ${ids.length} 条`);
+    toast("info", tt(`已彻底删除 ${ids.length} 条`, `Permanently deleted ${ids.length} item${ids.length > 1 ? "s" : ""}`));
   }
 
   function createHere() {
     const vaultId = vault?.id || state.vaults[0]?.id;
-    if (!vaultId) { toast("warn", "请先创建一个仓库"); return; }
+    if (!vaultId) { toast("warn", tt("请先创建一个仓库", "Please create a vault first")); return; }
     const p = newPrompt(vaultId, "custom");
     if (group) p.groupId = group.id;
     set((s) => ({ ...s, prompts: [p, ...s.prompts] }));
@@ -244,16 +250,16 @@ export function PromptListPage() {
             <div className="flex items-center gap-2.5">
               <h1 className="title-serif truncate text-[21px] font-black">{title}</h1>
               <span className="chip !py-[2px] !text-[10.5px] tabular-nums">{filtered.length}</span>
-              {route.smart === "pending-sync" && syncStatus === "online" && <span className="text-[11px]" style={{ color: "var(--ok)" }}>连接中</span>}
+              {route.smart === "pending-sync" && syncStatus === "online" && <span className="text-[11px]" style={{ color: "var(--ok)" }}>{tt("连接中", "Connected")}</span>}
             </div>
             {desc && <p className="mt-0.5 text-[12px]" style={{ color: "var(--ink-2)" }}>{desc}</p>}
           </div>
           {!isTrash && (
             <div className="flex items-center gap-2">
               <button className="btn" onClick={() => { setSelMode((v) => !v); setSel([]); }}>
-                <Icon name="check" size={13} /> {selMode ? "退出多选" : "多选"}
+                <Icon name="check" size={13} /> {selMode ? tt("退出多选", "Done selecting") : tt("多选", "Select")}
               </button>
-              <button className="btn btn-primary" onClick={createHere}><Icon name="plus" size={14} /> 新建</button>
+              <button className="btn btn-primary" onClick={createHere}><Icon name="plus" size={14} /> {tt("新建", "New")}</button>
             </div>
           )}
         </div>
@@ -262,7 +268,7 @@ export function PromptListPage() {
         <div className="mt-4 flex flex-wrap items-center gap-2.5 pb-3.5">
           <div className="relative min-w-[180px] flex-1 sm:max-w-[280px]">
             <Icon name="search" size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 opacity-50" />
-            <input className="input !pl-9" data-search-input placeholder="搜索标题、正文、标签、变量…" value={q} onChange={(e) => setQ(e.target.value)} />
+            <input className="input !pl-9" data-search-input placeholder={tt("搜索标题、正文、标签、变量…", "Search titles, body, tags, variables…")} value={q} onChange={(e) => setQ(e.target.value)} />
           </div>
           <div className="flex flex-wrap items-center gap-1.5">
             <button className={cx("chip chip-btn", typeF === "all" && "!border-[var(--brass-2)] !bg-[#f6eeda] font-medium text-[var(--ink)]")} onClick={() => setTypeF("all")}>{tt("全部", "All")}</button>
@@ -274,16 +280,16 @@ export function PromptListPage() {
           </div>
           <div className="ml-auto flex items-center gap-2">
             <select className="select !w-auto !py-[6px] !text-[12px]" value={sort} onChange={(e) => setSort(e.target.value as any)}>
-              <option value="update">按更新</option>
-              <option value="create">按创建</option>
-              <option value="use">按使用次数</option>
-              <option value="title">按标题</option>
+              <option value="update">{tt("按更新", "By updated")}</option>
+              <option value="create">{tt("按创建", "By created")}</option>
+              <option value="use">{tt("按使用次数", "By uses")}</option>
+              <option value="title">{tt("按标题", "By title")}</option>
             </select>
             <div className="flex overflow-hidden rounded-[9px] border" style={{ borderColor: "var(--line-2)" }}>
               {(["card", "compact"] as const).map((v) => (
                 <button key={v} className={cx("px-2.5 py-[6px] text-[11.5px]", view === v ? "bg-[#eee2c6] font-medium" : "")}
                   style={{ color: "var(--ink-2)" }} onClick={() => setView(v)}>
-                  {v === "card" ? "卡片" : "紧凑"}
+                  {v === "card" ? tt("卡片", "Cards") : tt("紧凑", "Compact")}
                 </button>
               ))}
             </div>
@@ -296,15 +302,15 @@ export function PromptListPage() {
         {filtered.length === 0 ? (
           <div className="card">
             {q ? (
-              <EmptyState icon="search" title="没有找到相关内容" desc={`没有匹配「${q}」的提示词。可以换个关键词，或清除筛选条件。`}>
-                <button className="btn" onClick={() => { setQ(""); setTypeF("all"); }}>清除搜索与筛选</button>
-                {!isTrash && <button className="btn btn-primary" onClick={() => { createHere(); }}><Icon name="plus" size={13} /> 新建「{q}」相关提示词</button>}
+              <EmptyState icon="search" title={tt("没有找到相关内容", "Nothing found")} desc={tt(`没有匹配「${q}」的提示词。可以换个关键词，或清除筛选条件。`, `No prompts match “${q}”. Try another keyword or clear the filters.`)}>
+                <button className="btn" onClick={() => { setQ(""); setTypeF("all"); }}>{tt("清除搜索与筛选", "Clear search & filters")}</button>
+                {!isTrash && <button className="btn btn-primary" onClick={() => { createHere(); }}><Icon name="plus" size={13} /> {tt("新建", "New")}「{q}」</button>}
               </EmptyState>
             ) : isTrash ? (
-              <EmptyState icon="trash" title="回收站是空的" desc="删除的内容会先放在这里，30 天内都可以恢复。" />
+              <EmptyState icon="trash" title={tt("回收站是空的", "Trash is empty")} desc={tt("删除的内容会先放在这里，30 天内都可以恢复。", "Deleted items rest here first — restorable for 30 days.")} />
             ) : (
-              <EmptyState icon="inbox" title="这里还没有提示词" desc="试试新建一条，或从模板开始。好的提示词值得被认真收起来。">
-                <button className="btn btn-primary" onClick={createHere}><Icon name="plus" size={13} /> 新建提示词</button>
+              <EmptyState icon="inbox" title={tt("这里还没有提示词", "No prompts here yet")} desc={tt("试试新建一条，或从模板开始。好的提示词值得被认真收起来。", "Create one, or start from a template. Good prompts deserve a proper home.")}>
+                <button className="btn btn-primary" onClick={createHere}><Icon name="plus" size={13} /> {tt("新建提示词", "New prompt")}</button>
               </EmptyState>
             )}
           </div>
@@ -330,34 +336,34 @@ export function PromptListPage() {
       {selMode && sel.length > 0 && (
         <div className="pop-in flex-none border-t px-6 py-3" style={{ borderColor: "var(--line-2)", background: "linear-gradient(180deg, #f6eeda, #efe5cd)" }}>
           <div className="flex flex-wrap items-center gap-2">
-            <span className="mr-1 text-[12.5px] font-medium">已选 {sel.length} 条</span>
+            <span className="mr-1 text-[12.5px] font-medium">{tt("已选", "Selected")} {sel.length}</span>
             {!isTrash && (
               <>
-                <button className="btn !py-[6px] !text-[12px]" onClick={() => setTagOpen(true)}><Icon name="tag" size={12} /> 打标签</button>
-                <button className="btn !py-[6px] !text-[12px]" onClick={() => setMoveOpen(true)}><Icon name="move" size={12} /> 移动</button>
-                <button className="btn !py-[6px] !text-[12px]" onClick={() => { set((s) => ({ ...s, prompts: s.prompts.map((p) => (sel.includes(p.id) ? { ...p, favorite: true } : p)) })); toast("ok", "已收藏所选"); }}><Icon name="star" size={12} /> 收藏</button>
-                <button className="btn !py-[6px] !text-[12px]" onClick={() => helpers.exportPrompts(sel)}><Icon name="download" size={12} /> 导出</button>
-                <button className="btn btn-danger !py-[6px] !text-[12px]" onClick={() => trash(sel)}><Icon name="trash" size={12} /> 删除</button>
+                <button className="btn !py-[6px] !text-[12px]" onClick={() => setTagOpen(true)}><Icon name="tag" size={12} /> {tt("打标签", "Tag")}</button>
+                <button className="btn !py-[6px] !text-[12px]" onClick={() => setMoveOpen(true)}><Icon name="move" size={12} /> {tt("移动", "Move")}</button>
+                <button className="btn !py-[6px] !text-[12px]" onClick={() => { set((s) => ({ ...s, prompts: s.prompts.map((p) => (sel.includes(p.id) ? { ...p, favorite: true } : p)) })); toast("ok", tt("已收藏所选", "Starred selection")); }}><Icon name="star" size={12} /> {tt("收藏", "Star")}</button>
+                <button className="btn !py-[6px] !text-[12px]" onClick={() => helpers.exportPrompts(sel)}><Icon name="download" size={12} /> {tt("导出", "Export")}</button>
+                <button className="btn btn-danger !py-[6px] !text-[12px]" onClick={() => trash(sel)}><Icon name="trash" size={12} /> {tt("删除", "Delete")}</button>
               </>
             )}
             {isTrash && (
               <>
-                <button className="btn !py-[6px] !text-[12px]" onClick={() => restore(sel)}><Icon name="undo" size={12} /> 批量恢复</button>
-                <button className="btn btn-danger !py-[6px] !text-[12px]" onClick={() => purge(sel)}><Icon name="trash" size={12} /> 彻底删除</button>
+                <button className="btn !py-[6px] !text-[12px]" onClick={() => restore(sel)}><Icon name="undo" size={12} /> {tt("批量恢复", "Restore all")}</button>
+                <button className="btn btn-danger !py-[6px] !text-[12px]" onClick={() => purge(sel)}><Icon name="trash" size={12} /> {tt("彻底删除", "Delete forever")}</button>
               </>
             )}
-            <button className="btn btn-ghost ml-auto !py-[6px] !text-[12px]" onClick={() => setSel(filtered.map((p) => p.id))}>全选</button>
+            <button className="btn btn-ghost ml-auto !py-[6px] !text-[12px]" onClick={() => setSel(filtered.map((p) => p.id))}>{tt("全选", "Select all")}</button>
           </div>
         </div>
       )}
 
       {/* 移动弹层 */}
-      <Modal open={moveOpen} onClose={() => setMoveOpen(false)} title={`移动 ${sel.length} 条到…`} width={360}>
+      <Modal open={moveOpen} onClose={() => setMoveOpen(false)} title={tt(`移动 ${sel.length} 条到…`, `Move ${sel.length} item${sel.length > 1 ? "s" : ""} to…`)} width={360}>
         <div className="space-y-1.5">
           {state.vaults.map((v) => (
             <button key={v.id} className="nav-item" onClick={() => {
               set((s) => ({ ...s, prompts: s.prompts.map((p) => (sel.includes(p.id) ? { ...p, vaultId: v.id, groupId: undefined } : p)) }));
-              toast("ok", `已移动到「${v.name}」`); setMoveOpen(false); setSel([]);
+              toast("ok", tt(`已移动到「${v.name}」`, `Moved to “${v.name}”`)); setMoveOpen(false); setSel([]);
             }}>
               <Icon name={v.icon} size={15} /> {v.name}
             </button>
@@ -366,12 +372,12 @@ export function PromptListPage() {
       </Modal>
 
       {/* 打标签弹层 */}
-      <Modal open={tagOpen} onClose={() => setTagOpen(false)} title="为所选内容打标签" width={360}>
+      <Modal open={tagOpen} onClose={() => setTagOpen(false)} title={tt("为所选内容打标签", "Tag the selection")} width={360}>
         <div className="flex flex-wrap gap-2">
           {state.tags.map((t) => (
             <button key={t.id} className="chip chip-btn" onClick={() => {
               set((s) => ({ ...s, prompts: s.prompts.map((p) => (sel.includes(p.id) && !p.tagIds.includes(t.id) ? { ...p, tagIds: [...p.tagIds, t.id] } : p)) }));
-              toast("ok", `已为 ${sel.length} 条加上「${t.name}」`); setTagOpen(false);
+              toast("ok", tt(`已为 ${sel.length} 条加上「${t.name}」`, `Tagged ${sel.length} item${sel.length > 1 ? "s" : ""} with “${t.name}”`)); setTagOpen(false);
             }}>
               <span className="dot !h-[6px] !w-[6px]" style={{ background: t.color }} /> {t.name}
             </button>
@@ -389,28 +395,28 @@ function CardActions({ p, isTrash, onRestore, onPurge }: { p: Prompt; isTrash: b
   if (isTrash) {
     return (
       <>
-        <button className="btn !py-[5px] !text-[11.5px]" onClick={onRestore}><Icon name="undo" size={12} /> 恢复</button>
-        <button className="btn btn-danger !py-[5px] !text-[11.5px]" onClick={() => setConfirmPurge(true)}><Icon name="trash" size={12} /> 彻底删除</button>
-        <Confirm open={confirmPurge} onClose={() => setConfirmPurge(false)} title="彻底删除" okText="彻底删除"
-          desc={`「${p.title}」将被永久删除，包括其版本历史。此操作不可恢复。`} onOk={onPurge} />
+        <button className="btn !py-[5px] !text-[11.5px]" onClick={onRestore}><Icon name="undo" size={12} /> {tt("恢复", "Restore")}</button>
+        <button className="btn btn-danger !py-[5px] !text-[11.5px]" onClick={() => setConfirmPurge(true)}><Icon name="trash" size={12} /> {tt("彻底删除", "Delete forever")}</button>
+        <Confirm open={confirmPurge} onClose={() => setConfirmPurge(false)} title={tt("彻底删除", "Delete forever")} okText={tt("彻底删除", "Delete forever")}
+          desc={tt(`「${p.title}」将被永久删除，包括其版本历史。此操作不可恢复。`, `“${p.title}” will be permanently deleted, including its version history. This cannot be undone.`)} onOk={onPurge} />
       </>
     );
   }
   return (
     <>
-      <button className="icon-btn" title="复制最终 Prompt" onClick={async (e) => {
+      <button className="icon-btn" title={tt("复制最终 Prompt", "Copy final prompt")} onClick={async (e) => {
         e.stopPropagation();
         const { copyText } = await import("./lib");
-        if (await copyText(composePrompt(p, {}))) toast("ok", "已复制最终 Prompt");
+        if (await copyText(composePrompt(p, {}))) toast("ok", tt("已复制最终 Prompt", "Final prompt copied"));
       }}><Icon name="copy" size={13} /></button>
-      <button className="icon-btn" title="进入调试" onClick={(e) => { e.stopPropagation(); select(p.id); setFocus(true); }}><Icon name="bolt" size={13} /></button>
+      <button className="icon-btn" title={tt("进入调试", "Open workbench")} onClick={(e) => { e.stopPropagation(); select(p.id); setFocus(true); }}><Icon name="bolt" size={13} /></button>
       <FavBtn p={p} />
       <PinBtn p={p} />
-      <button className="icon-btn hover:!text-[var(--err)]" title="移入回收站" onClick={(e) => {
+      <button className="icon-btn hover:!text-[var(--err)]" title={tt("移入回收站", "Move to Trash")} onClick={(e) => {
         e.stopPropagation();
         set((s) => ({ ...s, prompts: s.prompts.map((x) => (x.id === p.id ? { ...x, deletedAt: Date.now() } : x)) }));
-        toast("ok", "已移入回收站，可撤销", {
-          label: "撤销", fn: () => set((s) => ({ ...s, prompts: s.prompts.map((x) => (x.id === p.id ? { ...x, deletedAt: null } : x)) })),
+        toast("ok", tt("已移入回收站，可撤销", "Moved to Trash — undo available"), {
+          label: tt("撤销", "Undo"), fn: () => set((s) => ({ ...s, prompts: s.prompts.map((x) => (x.id === p.id ? { ...x, deletedAt: null } : x)) })),
         });
       }}><Icon name="trash" size={13} /></button>
     </>
@@ -421,7 +427,7 @@ export function FavBtn({ p }: { p: Prompt }) {
   const { set } = useStore();
   const [pop, setPop] = useState(false);
   return (
-    <button className={cx("icon-btn", p.favorite && "!text-[var(--brass)]")} title={p.favorite ? "取消收藏" : "收藏"}
+    <button className={cx("icon-btn", p.favorite && "!text-[var(--brass)]")} title={p.favorite ? tt("取消收藏", "Unstar") : tt("收藏", "Star")}
       onClick={(e) => {
         e.stopPropagation();
         if (!p.favorite) { setPop(true); setTimeout(() => setPop(false), 500); }
@@ -438,7 +444,7 @@ export function FavBtn({ p }: { p: Prompt }) {
 function PinBtn({ p }: { p: Prompt }) {
   const { set } = useStore();
   return (
-    <button className={cx("icon-btn", p.pinned && "!text-[var(--seal)]")} title={p.pinned ? "取消置顶" : "置顶"}
+    <button className={cx("icon-btn", p.pinned && "!text-[var(--seal)]")} title={p.pinned ? tt("取消置顶", "Unpin") : tt("置顶", "Pin")}
       onClick={(e) => { e.stopPropagation(); set((s) => ({ ...s, prompts: s.prompts.map((x) => (x.id === p.id ? { ...x, pinned: !x.pinned } : x)) })); }}>
       <Icon name="pin" size={13} />
     </button>
@@ -447,7 +453,7 @@ function PinBtn({ p }: { p: Prompt }) {
 
 function SyncMark({ p }: { p: Prompt }) {
   const color = p.sync === "synced" ? "var(--ok)" : p.sync === "pending" ? "var(--warn)" : "var(--ink-3)";
-  const t = p.sync === "synced" ? "已同步" : p.sync === "pending" ? "待同步" : "仅本机";
+  const t = p.sync === "synced" ? tt("已同步", "Synced") : p.sync === "pending" ? tt("待同步", "Pending") : tt("仅本机", "Local only");
   return <span className="inline-flex items-center gap-1 text-[10px]" style={{ color: "var(--ink-3)" }} title={t}><span className="dot !h-[5px] !w-[5px]" style={{ background: color }} />{t}</span>;
 }
 
@@ -464,7 +470,7 @@ export function PromptCard({ p, q, idx, selMode, sel, onSel, isTrash, onRestore,
         onClick={() => { if (selMode) onSel(); else { select(p.id); setFocus(false); } }}>
         {p.pinned && !isTrash && (
           <span className="absolute -top-[5px] right-4 flex h-[18px] w-[18px] items-center justify-center rounded-full text-[#fdf6ea]"
-            style={{ background: "linear-gradient(180deg, #c65247, #a63c32)", boxShadow: "0 2px 4px rgba(150,50,40,0.4)" }} title="已置顶">
+            style={{ background: "linear-gradient(180deg, #c65247, #a63c32)", boxShadow: "0 2px 4px rgba(150,50,40,0.4)" }} title={tt("已置顶", "Pinned")}>
             <Icon name="pin" size={9} sw={2.4} />
           </span>
         )}
@@ -478,7 +484,7 @@ export function PromptCard({ p, q, idx, selMode, sel, onSel, isTrash, onRestore,
           <TypeBadge type={p.type} size="sm" />
           <span className="ml-auto" />
           {!isTrash && <SyncMark p={p} />}
-          {isTrash && <span className="text-[10px]" style={{ color: "var(--err)" }}>{timeAgo(p.deletedAt)}删除</span>}
+          {isTrash && <span className="text-[10px]" style={{ color: "var(--err)" }}>{timeAgo(p.deletedAt)} {tt("删除", "deleted")}</span>}
         </div>
         <div className="title-serif mb-1 truncate text-[15px] font-bold">{hl(p.title, q)}</div>
         <p className="mb-3 line-clamp-2 min-h-[32px] text-[11.5px] leading-relaxed" style={{ color: "var(--ink-2)" }}>
@@ -492,10 +498,10 @@ export function PromptCard({ p, q, idx, selMode, sel, onSel, isTrash, onRestore,
           </div>
         )}
         <div className="flex items-center justify-between border-t pt-2.5 text-[10.5px] tabular-nums" style={{ borderColor: "var(--line)", color: "var(--ink-3)" }}>
-          <span>{timeAgo(p.updatedAt)} · 用过 {p.useCount} 次</span>
+          <span>{timeAgo(p.updatedAt)} · {p.useCount} {tt("次使用", "uses")}</span>
           <span className="flex items-center gap-2.5">
-            {vars.length > 0 && <span className="flex items-center gap-1"><Icon name="sparkle" size={10} />{vars.length} 变量</span>}
-            {p.versions.length > 0 && <span className="flex items-center gap-1"><Icon name="history" size={10} />{p.versions.length} 版本</span>}
+            {vars.length > 0 && <span className="flex items-center gap-1"><Icon name="sparkle" size={10} />{vars.length} {tt("变量", "vars")}</span>}
+            {p.versions.length > 0 && <span className="flex items-center gap-1"><Icon name="history" size={10} />{p.versions.length} {tt("版本", "versions")}</span>}
           </span>
         </div>
         <div className="pointer-events-none absolute inset-x-3 bottom-10 flex justify-end gap-0.5 opacity-0 transition-opacity group-hover:pointer-events-auto group-hover:opacity-100">
@@ -525,7 +531,7 @@ function CompactRow({ p, q, selMode, sel, onSel, isTrash, onRestore, onPurge }:
       <span className="min-w-0 flex-1 truncate text-[13px]">{hl(p.title, q)}</span>
       <span className="hidden truncate text-[11px] sm:block" style={{ color: "var(--ink-3)", maxWidth: 180 }}>{p.summary || p.body.slice(0, 30)}</span>
       <span className="flex-none text-[10.5px] tabular-nums" style={{ color: "var(--ink-3)" }}>{timeAgo(p.updatedAt)}</span>
-      <span className="hidden flex-none text-[10.5px] tabular-nums md:block" style={{ color: "var(--ink-3)" }}>{p.useCount} 次</span>
+      <span className="hidden flex-none text-[10.5px] tabular-nums md:block" style={{ color: "var(--ink-3)" }}>{p.useCount} {tt("次", "×")}</span>
       <div className="flex flex-none gap-0.5 opacity-0 transition-opacity group-hover:opacity-100" onClick={(e) => e.stopPropagation()}>
         <CardActions p={p} isTrash={isTrash} onRestore={onRestore} onPurge={onPurge} />
       </div>
@@ -547,11 +553,11 @@ export function TagManager() {
             <span className="dot !h-[6px] !w-[6px]" style={{ background: t.color }} />
             {t.name}
             <span className="tabular-nums opacity-60">{used(t.id)}</span>
-            <button className="ml-0.5 opacity-0 transition-opacity group-hover/tag:opacity-100 hover:text-[var(--err)]" title={used(t.id) > 0 ? `有 ${used(t.id)} 条在使用` : "删除标签"}
+            <button className="ml-0.5 opacity-0 transition-opacity group-hover/tag:opacity-100 hover:text-[var(--err)]" title={used(t.id) > 0 ? tt(`有 ${used(t.id)} 条在使用`, `${used(t.id)} in use`) : tt("删除标签", "Delete tag")}
               onClick={() => {
-                if (used(t.id) > 0) { toast("warn", `「${t.name}」仍有 ${used(t.id)} 条在使用，已跳过`); return; }
+                if (used(t.id) > 0) { toast("warn", tt(`「${t.name}」仍有 ${used(t.id)} 条在使用，已跳过`, `“${t.name}” is still used by ${used(t.id)} item(s) — skipped`)); return; }
                 set((s) => ({ ...s, tags: s.tags.filter((x) => x.id !== t.id) }));
-                toast("info", `已清理未使用标签「${t.name}」`);
+                toast("info", tt(`已清理未使用标签「${t.name}」`, `Removed unused tag “${t.name}”`));
               }}>
               <Icon name="close" size={10} />
             </button>
@@ -559,15 +565,15 @@ export function TagManager() {
         ))}
       </div>
       <div className="flex flex-wrap items-center gap-2">
-        <input className="input !w-[160px]" placeholder="新标签名" value={name} onChange={(e) => setName(e.target.value)}
+        <input className="input !w-[160px]" placeholder={tt("新标签名", "New tag name")} value={name} onChange={(e) => setName(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && add()} />
         {["var(--moss)", "var(--slate)", "var(--clay)", "var(--plum)", "var(--sand)", "var(--seal)"].map((c) => (
           <button key={c} className="h-5.5 w-5.5 rounded-full border-2" style={{ background: c, width: 21, height: 21, borderColor: color === c ? "var(--ink)" : "transparent" }}
-            onClick={() => setColor(c)} aria-label="颜色" />
+            onClick={() => setColor(c)} aria-label={tt("颜色", "Color")} />
         ))}
-        <button className="btn !py-[7px] !text-[12px]" onClick={add}><Icon name="plus" size={12} /> 添加</button>
+        <button className="btn !py-[7px] !text-[12px]" onClick={add}><Icon name="plus" size={12} /> {tt("添加", "Add")}</button>
         {state.tags.filter((t) => used(t.id) === 0).length > 0 && (
-          <span className="text-[11px]" style={{ color: "var(--ink-3)" }}>{state.tags.filter((t) => used(t.id) === 0).length} 个未使用标签可清理</span>
+          <span className="text-[11px]" style={{ color: "var(--ink-3)" }}>{state.tags.filter((t) => used(t.id) === 0).length} {tt("个未使用标签可清理", "unused tags can be cleaned up")}</span>
         )}
       </div>
     </div>
@@ -575,10 +581,10 @@ export function TagManager() {
 
   function add() {
     if (!name.trim()) return;
-    if (state.tags.some((t) => t.name === name.trim())) { toast("warn", "已有同名标签"); return; }
+    if (state.tags.some((t) => t.name === name.trim())) { toast("warn", tt("已有同名标签", "A tag with this name already exists")); return; }
     set((s) => ({ ...s, tags: [...s.tags, { id: uid(), name: name.trim(), color }] }));
     setName("");
-    toast("ok", `标签「${name.trim()}」已创建`);
+    toast("ok", tt(`标签「${name.trim()}」已创建`, `Tag “${name.trim()}” created`));
   }
 }
 

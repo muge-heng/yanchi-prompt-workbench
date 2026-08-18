@@ -125,13 +125,13 @@ export default function Workbench({ p }: { p: Prompt }) {
               </div>
             )}
             <div className="flex gap-1.5">
-              <input className="input !py-[5px] !text-[11.5px]" placeholder="预设名，如「美妆向」" value={presetName} onChange={(e) => setPresetName(e.target.value)} />
-              <button className="btn flex-none !px-2.5 !py-[5px]" title="把当前填写存为预设" onClick={() => {
-                if (!presetName.trim()) { toast("warn", "先给预设起个名字"); return; }
-                if (Object.values(values).every((x) => !x)) { toast("warn", "先填写至少一个变量"); return; }
+              <input className="input !py-[5px] !text-[11.5px]" placeholder={tt("预设名，如「美妆向」", "Preset name, e.g. “beauty tone”")} value={presetName} onChange={(e) => setPresetName(e.target.value)} />
+              <button className="btn flex-none !px-2.5 !py-[5px]" title={tt("把当前填写存为预设", "Save current values as a preset")} onClick={() => {
+                if (!presetName.trim()) { toast("warn", tt("先给预设起个名字", "Give the preset a name first")); return; }
+                if (Object.values(values).every((x) => !x)) { toast("warn", tt("先填写至少一个变量", "Fill in at least one variable first")); return; }
                 patchPrompt(p.id, { presets: [...p.presets, { id: uid(), name: presetName.trim(), values: { ...values } }] });
                 setPresetName("");
-                toast("ok", "预设已保存");
+                toast("ok", tt("预设已保存", "Preset saved"));
               }}><Icon name="plus" size={12} /></button>
             </div>
           </div>
@@ -141,7 +141,7 @@ export default function Workbench({ p }: { p: Prompt }) {
         <div className="min-w-0 space-y-3">
           <div className="card overflow-hidden">
             <div className="flex flex-wrap items-center gap-2 border-b px-3.5 py-2.5" style={{ borderColor: "var(--line)" }}>
-              <span className="title-serif text-[12.5px] font-bold">实时预览</span>
+              <span className="title-serif text-[12.5px] font-bold">{tt("实时预览", "Live preview")}</span>
               {fmts.length > 1 && (
                 <div className="flex overflow-hidden rounded-lg border" style={{ borderColor: "var(--line-2)" }}>
                   {fmts.map((f, i) => (
@@ -152,12 +152,12 @@ export default function Workbench({ p }: { p: Prompt }) {
                 </div>
               )}
               <span className="ml-auto text-[10.5px] tabular-nums" style={{ color: "var(--ink-3)" }}>
-                {fmts[fmtIdx].text.length} 字符{paramSummary(p) && ` · ${paramSummary(p)}`}
+                {fmts[fmtIdx].text.length} {tt("字符", "chars")}{paramSummary(p) && ` · ${paramSummary(p)}`}
               </span>
             </div>
             <div className="mono-area max-h-[300px] min-h-[140px] overflow-auto whitespace-pre-wrap px-4 py-3.5 text-[12px] leading-[1.85]"
               style={{ color: "var(--ink)", background: "linear-gradient(180deg, #fdfaf1, #faf5e7)" }}>
-              {fmts[fmtIdx].text || <span style={{ color: "var(--ink-3)" }}>（空）——先填写正文或字段</span>}
+              {fmts[fmtIdx].text || <span style={{ color: "var(--ink-3)" }}>{tt("（空）——先填写正文或字段", "(empty) — fill in the body or fields first")}</span>}
             </div>
             {p.type === "image" && p.negative.trim() && (
               <div className="border-t px-4 py-2.5 text-[11.5px]" style={{ borderColor: "var(--line)", color: "var(--err)" }}>
@@ -165,19 +165,19 @@ export default function Workbench({ p }: { p: Prompt }) {
               </div>
             )}
             <div className="flex flex-wrap items-center gap-2 border-t px-3.5 py-3" style={{ borderColor: "var(--line)", background: "var(--card-2)" }}>
-              <CopyBtn size="sm" label={`复制${fmts.length > 1 ? fmts[fmtIdx].name : "最终 Prompt"}`} text={fmts[fmtIdx].text}
+              <CopyBtn size="sm" label={`${tt("复制", "Copy")} ${fmts.length > 1 ? fmts[fmtIdx].name : tt("最终 Prompt", "final prompt")}`} text={fmts[fmtIdx].text}
                 onCopied={() => { patchPrompt(p.id, { useCount: p.useCount + 1, lastUsedAt: Date.now(), runs: p.runs.map((r, i) => (i === 0 ? { ...r, copied: true } : r)) }); }} />
-              <button className="btn !py-[6px] !text-[12px]" onClick={trialRun}><Icon name="bolt" size={12} /> 试运行</button>
+              <button className="btn !py-[6px] !text-[12px]" onClick={trialRun}><Icon name="bolt" size={12} /> {tt("试运行", "Trial run")}</button>
               <button className="btn !py-[6px] !text-[12px]" onClick={() => {
-                const v = versionOf(p, `v${p.versions.length + 1} · 工作台存档`);
+                const v = versionOf(p, `v${p.versions.length + 1} · ${tt("工作台存档", "workbench save")}`);
                 patchPrompt(p.id, { versions: [v, ...p.versions] });
-                toast("ok", `已存为「${v.label}」`);
-              }}><Icon name="history" size={12} /> 存版本</button>
+                toast("ok", tt(`已存为「${v.label}」`, `Saved as “${v.label}”`));
+              }}><Icon name="history" size={12} /> {tt("存版本", "Save version")}</button>
               <button className="btn !py-[6px] !text-[12px]" onClick={() => {
                 syncApi.pushPrompts([p.id]);
                 patchPrompt(p.id, { runs: p.runs.map((r, i) => (i === 0 ? { ...r, sent: true } : r)) });
               }}>
-                <Icon name="send" size={12} /> {syncStatus === "online" ? "发送到设备" : "加入同步队列"}
+                <Icon name="send" size={12} /> {syncStatus === "online" ? tt("发送到设备", "Send to devices") : tt("加入同步队列", "Queue for sync")}
               </button>
             </div>
           </div>
@@ -187,10 +187,10 @@ export default function Workbench({ p }: { p: Prompt }) {
             <div className="card p-3.5">
               <div className="flex flex-wrap items-center gap-2">
                 <Icon name="link" size={13} className="opacity-60" />
-                <span className="title-serif text-[12.5px] font-bold">外部模型调试</span>
-                <span className="text-[10.5px]" style={{ color: "var(--ink-3)" }}>{state.settings.apiModel || "默认模型"} · 密钥仅存本机</span>
+                <span className="title-serif text-[12.5px] font-bold">{tt("外部模型调试", "External model")}</span>
+                <span className="text-[10.5px]" style={{ color: "var(--ink-3)" }}>{state.settings.apiModel || tt("默认模型", "default model")} · {tt("密钥仅存本机", "key stays local")}</span>
                 <button className="btn btn-primary ml-auto !py-[5px] !text-[11.5px]" disabled={extLoading || !final} onClick={callExternal}>
-                  {extLoading ? <><Icon name="sync" size={11} className="spin" /> 调用中…</> : <><Icon name="bolt" size={11} /> 发送并获取回复</>}
+                  {extLoading ? <><Icon name="sync" size={11} className="spin" /> {tt("调用中…", "Calling…")}</> : <><Icon name="bolt" size={11} /> {tt("发送并获取回复", "Send & get reply")}</>}
                 </button>
               </div>
               {extResult && (
@@ -207,12 +207,12 @@ export default function Workbench({ p }: { p: Prompt }) {
       {/* 调试历史 */}
       <div className="card p-4">
         <div className="mb-3 flex items-center justify-between">
-          <span className="title-serif flex items-center gap-1.5 text-[12.5px] font-bold"><Icon name="history" size={13} className="opacity-60" /> 调试历史</span>
-          <span className="text-[10.5px]" style={{ color: "var(--ink-3)" }}>回溯「我当时是怎么调的」</span>
+          <span className="title-serif flex items-center gap-1.5 text-[12.5px] font-bold"><Icon name="history" size={13} className="opacity-60" /> {tt("调试历史", "Debug history")}</span>
+          <span className="text-[10.5px]" style={{ color: "var(--ink-3)" }}>{tt("回溯「我当时是怎么调的」", "Trace back “how did I tune this”")}</span>
         </div>
         {p.runs.length === 0 ? (
           <p className="py-4 text-center text-[12px]" style={{ color: "var(--ink-3)" }}>
-            还没有记录。点一次「试运行」，这次的变量与结果就会留在这里。
+            {tt("还没有记录。点一次「试运行」，这次的变量与结果就会留在这里。", "No records yet. Hit “Trial run” once and this run's variables and result will stay here.")}
           </p>
         ) : (
           <div className="space-y-2">
@@ -224,15 +224,15 @@ export default function Workbench({ p }: { p: Prompt }) {
                     <span key={k} className="chip !py-[1px] !text-[10px]">{k}＝{v.length > 8 ? v.slice(0, 8) + "…" : v}</span>
                   ))}
                   <span className="ml-auto flex items-center gap-2">
-                    {r.copied && <span className="flex items-center gap-1" style={{ color: "var(--ok)" }}><Icon name="copy" size={10} /> 已复制</span>}
-                    {r.sent && <span className="flex items-center gap-1" style={{ color: "var(--slate)" }}><Icon name="send" size={10} /> 已发送</span>}
+                    {r.copied && <span className="flex items-center gap-1" style={{ color: "var(--ok)" }}><Icon name="copy" size={10} /> {tt("已复制", "copied")}</span>}
+                    {r.sent && <span className="flex items-center gap-1" style={{ color: "var(--slate)" }}><Icon name="send" size={10} /> {tt("已发送", "sent")}</span>}
                     <CopyBtn size="sm" label="" text={r.final} className="!px-2" />
-                    <button className="icon-btn !h-6 !w-6" onClick={() => setOpenRun(openRun === r.id ? null : r.id)} title="展开结果">
+                    <button className="icon-btn !h-6 !w-6" onClick={() => setOpenRun(openRun === r.id ? null : r.id)} title={tt("展开结果", "Expand result")}>
                       <Icon name={openRun === r.id ? "chevD" : "chevR"} size={11} />
                     </button>
                   </span>
                 </div>
-                {r.note && <div className="mt-1.5 text-[11.5px]" style={{ color: "var(--ink-2)" }}>备注：{r.note}</div>}
+                {r.note && <div className="mt-1.5 text-[11.5px]" style={{ color: "var(--ink-2)" }}>{tt("备注：", "Note: ")}{r.note}</div>}
                 {openRun === r.id && (
                   <div className="mono-area mt-2 max-h-[160px] overflow-auto whitespace-pre-wrap rounded-lg border px-3 py-2 text-[11px]"
                     style={{ borderColor: "var(--line)", background: "#fdfaf1" }}>
