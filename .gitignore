@@ -1,5 +1,26 @@
+# 依赖与构建产物
 node_modules/
-.next/
 dist/
+*.local
+
+# 日志与缓存
+npm-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.tsbuildinfo
+
+# 环境
+.env
+.env.*
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+.next/
 build/
 *.log

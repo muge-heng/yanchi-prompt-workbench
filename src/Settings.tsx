@@ -205,6 +205,19 @@ export default function Settings() {
               <p className="mt-2">在局域网多端使用时，可在电脑上运行随附的 <Kbd>python launcher.py</Kbd> 启动本地服务并自动打开浏览器，页面会提示「本地服务运行中」。</p>
             </div>
           </div>
+          <div className="mt-4 overflow-hidden rounded-xl border" style={{ borderColor: "var(--line-2)" }}>
+            <img src="https://image.qwenlm.ai/generated-images/a3678a9b-3b49-46f3-8a15-93b69355e62e/_result.png" alt="砚池 · 案头一景" className="block w-full" loading="lazy" />
+          </div>
+          <div className="mt-4 grid grid-cols-1 gap-2.5 text-[11px] leading-relaxed sm:grid-cols-2" style={{ color: "var(--ink-2)" }}>
+            <div className="rounded-xl border px-3.5 py-3" style={{ borderColor: "var(--line)", background: "var(--card-2)" }}>
+              <div className="mb-0.5 flex items-center gap-1.5 font-medium" style={{ color: "var(--ink)" }}><Icon name="shield" size={12} className="opacity-60" /> 开源协议</div>
+              砚池以 MIT 协议开源，可自由使用、修改与再分发。© 2026 Yanchi Contributors。
+            </div>
+            <div className="rounded-xl border px-3.5 py-3" style={{ borderColor: "var(--line)", background: "var(--card-2)" }}>
+              <div className="mb-0.5 flex items-center gap-1.5 font-medium" style={{ color: "var(--ink)" }}><Icon name="pen" size={12} className="opacity-60" /> 字体致谢</div>
+              思源宋体 / 思源黑体、JetBrains Mono，均遵循 SIL Open Font License 1.1。
+            </div>
+          </div>
         </Sec>
       </div>
 
