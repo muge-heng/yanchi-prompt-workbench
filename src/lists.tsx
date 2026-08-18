@@ -35,17 +35,17 @@ export function VaultListPage() {
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div>
               <div className="engrave mb-1 text-[11px] tracking-[0.25em]">VAULTS</div>
-              <h1 className="title-serif text-[26px] font-black">仓库总览</h1>
-              <p className="mt-1 text-[12.5px]" style={{ color: "var(--ink-2)" }}>{state.vaults.length} 个空间 · {live.length} 条提示词 · 数据保存在本机</p>
+              <h1 className="title-serif text-[26px] font-black">{tt("仓库总览", "All vaults")}</h1>
+              <p className="mt-1 text-[12.5px]" style={{ color: "var(--ink-2)" }}>{state.vaults.length} {tt("个空间", "spaces")} · {live.length} {tt("条提示词", "prompts")} · {tt("数据保存在本机", "data stays on this device")}</p>
             </div>
-            <button className="btn btn-primary" onClick={() => setNewOpen(true)}><Icon name="plus" size={14} /> 新建仓库</button>
+            <button className="btn btn-primary" onClick={() => setNewOpen(true)}><Icon name="plus" size={14} /> {tt("新建仓库", "New vault")}</button>
           </div>
         </Reveal>
 
         {state.vaults.length === 0 ? (
           <div className="card mt-8">
-            <EmptyState icon="grid" title="还没有仓库" desc="仓库是你组织提示词的最大单位，比如「工作项目」「生图模板库」。">
-              <button className="btn btn-primary" onClick={() => setNewOpen(true)}><Icon name="plus" size={13} /> 创建第一个仓库</button>
+            <EmptyState icon="grid" title={tt("还没有仓库", "No vaults yet")} desc={tt("仓库是你组织提示词的最大单位，比如「工作项目」「生图模板库」。", "A vault is the biggest unit for organizing prompts, e.g. “Work projects” or “Image templates”.")}>
+              <button className="btn btn-primary" onClick={() => setNewOpen(true)}><Icon name="plus" size={13} /> {tt("创建第一个仓库", "Create your first vault")}</button>
             </EmptyState>
           </div>
         ) : (
@@ -63,14 +63,14 @@ export function VaultListPage() {
                         <Icon name={v.icon} size={20} />
                       </span>
                       <div className="flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-                        <button className="icon-btn" title="重命名" onClick={() => { setEditing(v); setName(v.name); }}><Icon name="pen" size={13} /></button>
-                        <button className="icon-btn" title="导出仓库" onClick={() => helpers.exportPrompts(ps.map((p) => p.id))}><Icon name="download" size={13} /></button>
-                        <button className="icon-btn hover:!text-[var(--err)]" title="删除仓库" onClick={() => setToDelete(v)}><Icon name="trash" size={13} /></button>
+                        <button className="icon-btn" title={tt("重命名", "Rename")} onClick={() => { setEditing(v); setName(v.name); }}><Icon name="pen" size={13} /></button>
+                        <button className="icon-btn" title={tt("导出仓库", "Export vault")} onClick={() => helpers.exportPrompts(ps.map((p) => p.id))}><Icon name="download" size={13} /></button>
+                        <button className="icon-btn hover:!text-[var(--err)]" title={tt("删除仓库", "Delete vault")} onClick={() => setToDelete(v)}><Icon name="trash" size={13} /></button>
                       </div>
                     </div>
                     <button className="text-left" onClick={() => nav({ name: "list", vaultId: v.id })}>
                       <div className="title-serif text-[16px] font-bold">{v.name}</div>
-                      <div className="mt-1 line-clamp-2 min-h-[32px] text-[11.5px] leading-relaxed" style={{ color: "var(--ink-2)" }}>{v.desc || "暂无描述"}</div>
+                      <div className="mt-1 line-clamp-2 min-h-[32px] text-[11.5px] leading-relaxed" style={{ color: "var(--ink-2)" }}>{v.desc || tt("暂无描述", "No description yet")}</div>
                     </button>
                     <div className="mt-3 flex flex-wrap gap-1.5">
                       {tags.map((tid) => {
@@ -79,11 +79,11 @@ export function VaultListPage() {
                       })}
                     </div>
                     <div className="mt-4 flex items-center justify-between border-t pt-3 text-[11px]" style={{ borderColor: "var(--line)", color: "var(--ink-3)" }}>
-                      <span className="tabular-nums">{ps.length} 条 · 收藏 {ps.filter((p) => p.favorite).length}</span>
-                      <span>{lastUp ? timeAgo(lastUp) + "更新" : "空仓库"}</span>
+                      <span className="tabular-nums">{ps.length} {tt("条", "items")} · {ps.filter((p) => p.favorite).length} {tt("收藏", "starred")}</span>
+                      <span>{lastUp ? timeAgo(lastUp) + " " + tt("前更新", "ago") : tt("空仓库", "Empty vault")}</span>
                     </div>
                     <button className="btn mt-3 w-full !py-[7px] !text-[12px] opacity-90" onClick={() => nav({ name: "list", vaultId: v.id })}>
-                      进入仓库 <Icon name="chevR" size={12} />
+                      {tt("进入仓库", "Open vault")} <Icon name="chevR" size={12} />
                     </button>
                   </div>
                 </Reveal>
@@ -95,18 +95,18 @@ export function VaultListPage() {
 
       <NewVaultModal open={newOpen} onClose={() => setNewOpen(false)} />
 
-      <Modal open={!!editing} onClose={() => setEditing(null)} title="重命名仓库" width={380}>
+      <Modal open={!!editing} onClose={() => setEditing(null)} title={tt("重命名仓库", "Rename vault")} width={380}>
         <input className="input" value={name} onChange={(e) => setName(e.target.value)} autoFocus
           onKeyDown={(e) => e.key === "Enter" && saveName()} />
         <div className="mt-4 flex justify-end gap-2.5">
-          <button className="btn" onClick={() => setEditing(null)}>取消</button>
-          <button className="btn btn-primary" onClick={saveName}>保存</button>
+          <button className="btn" onClick={() => setEditing(null)}>{tt("取消", "Cancel")}</button>
+          <button className="btn btn-primary" onClick={saveName}>{tt("保存", "Save")}</button>
         </div>
       </Modal>
 
-      <Confirm open={!!toDelete} onClose={() => setToDelete(null)} title={`删除仓库「${toDelete?.name}」`}
-        desc={`仓库内的 ${live.filter((p) => p.vaultId === toDelete?.id).length} 条提示词将一并移入回收站，可随时恢复。`}
-        okText="移入回收站" onOk={() => {
+      <Confirm open={!!toDelete} onClose={() => setToDelete(null)} title={`${tt("删除仓库", "Delete vault")}「${toDelete?.name}」`}
+        desc={`${live.filter((p) => p.vaultId === toDelete?.id).length} ${tt("条提示词将一并移入回收站，可随时恢复。", "prompts inside will also move to Trash and can be restored anytime.")}`}
+        okText={tt("移入回收站", "Move to Trash")} onOk={() => {
           if (!toDelete) return;
           set((s) => ({
             ...s,
@@ -114,7 +114,7 @@ export function VaultListPage() {
             groups: s.groups.filter((g) => g.vaultId !== toDelete.id),
             prompts: s.prompts.map((p) => (p.vaultId === toDelete.id && !p.deletedAt ? { ...p, deletedAt: Date.now() } : p)),
           }));
-          toast("ok", "已删除仓库，内容可在回收站恢复");
+          toast("ok", tt("已删除仓库，内容可在回收站恢复", "Vault deleted; its contents can be restored from Trash"));
           nav({ name: "vaults" });
         }} />
     </div>

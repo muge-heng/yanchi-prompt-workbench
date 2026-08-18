@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import type { AppState, Prompt, Version, DebugRun, Tag, Vault, Group, TypeDef, Lang } from "./lib";
-import { uid, makeBackup, download, DEFAULT_TYPES, registerTypes, setLang, getTypeDef, tt } from "./lib";
+import { uid, makeBackup, download, DEFAULT_TYPES, DEFAULT_SIDEBAR, registerTypes, setLang, getTypeDef, tt } from "./lib";
 import { seedState } from "./seed";
 import { SyncEngine, type SyncStatus, type SyncLog } from "./sync";
 
@@ -232,7 +232,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         setState({
           ...seeded, ...data,
           types: mergeTypes(data.types),
-          settings: { ...seeded.settings, ...data.settings },
+          settings: {
+            ...seeded.settings, ...data.settings,
+            /* 旧数据可能缺少 sidebar，按默认补齐。Backfill sidebar prefs for older saves. */
+            sidebar: { ...DEFAULT_SIDEBAR, ...(data.settings?.sidebar || {}) },
+          },
         });
       }
       setReady(true);

@@ -3,7 +3,7 @@
  * Yanchi · seeded demo data (bilingual, chosen by system language)
  * ============================================================ */
 import type { AppState, Prompt, TypeDef, Lang } from "./lib";
-import { DEFAULT_TYPES } from "./lib";
+import { DEFAULT_TYPES, DEFAULT_SIDEBAR } from "./lib";
 
 const now = Date.now();
 const H = 3_600_000, D = 86_400_000;
@@ -58,6 +58,7 @@ export function seedState(lang: Lang): AppState {
       deviceName: t("我的书桌", "My Desk"), wsUrl: "", ns: "prompt-vault", autoSync: true,
       scope: "all", apiUrl: "", apiKey: "", apiModel: "",
       reduceMotion: false, saveFlash: true, compactList: false,
+      sidebar: { ...DEFAULT_SIDEBAR },
     },
     types: [...DEFAULT_TYPES, ...customTypes(t)],
     vaults: [

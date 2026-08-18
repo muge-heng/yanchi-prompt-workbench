@@ -33,6 +33,7 @@ function Row({ label, hint, right }: { label: string; hint?: string; right: Reac
 export default function Settings() {
   const { state, set, toast, storageKB, nav } = useStore();
   const helpers = useHelpers();
+  const changeLang = helpers.changeLang;
   const s = state.settings;
   const fileRef = useRef<HTMLInputElement>(null);
   const [showKey, setShowKey] = useState(false);
@@ -91,8 +92,21 @@ export default function Settings() {
           <h1 className="title-serif text-[26px] font-black">设置</h1>
         </Reveal>
 
-        <Sec title="基础" desc="这台设备在局域网同步中显示的名字" delay={40}>
-          <Row label="设备名称" hint="例如：书桌上的 Mac、客厅的 iPad"
+        <Sec title={tt("基础", "General")} desc={tt("语言与这台设备在同步中显示的名字", "Language and this device's name in sync")} delay={40}>
+          <Row label={tt("界面语言", "Interface language")} hint={tt("首次打开时已按系统语言自动选择", "Auto-detected from your system on first launch")}
+            right={
+              <div className="flex overflow-hidden rounded-lg border" style={{ borderColor: "var(--line-2)" }}>
+                {([["zh", "中文"], ["en", "English"]] as const).map(([code, name]) => (
+                  <button key={code}
+                    className="px-3 py-[5px] text-[12px] transition-colors"
+                    style={s.lang === code ? { background: "#eee2c6", fontWeight: 700, color: "var(--ink)" } : { color: "var(--ink-2)", background: "var(--card)" }}
+                    onClick={() => { changeLang(code); toast("ok", code === "en" ? "Switched to English" : "已切换为中文"); }}>
+                    {name}
+                  </button>
+                ))}
+              </div>
+            } />
+          <Row label={tt("设备名称", "Device name")} hint={tt("例如：书桌上的 Mac、客厅的 iPad", "e.g. the Mac on my desk, the iPad in the living room")}
             right={<input className="input !w-[200px]" value={s.deviceName} onChange={(e) => upS({ deviceName: e.target.value })} />} />
           <Row label="本机存储占用" hint={`数据保存在本机浏览器（IndexedDB），约 ${storageKB || "<1"} KB`}
             right={<span className="chip"><Icon name="doc" size={11} /> 已保存到本机</span>} />
@@ -103,8 +117,21 @@ export default function Settings() {
             right={<Toggle on={s.reduceMotion} onChange={(b) => upS({ reduceMotion: b })} label="减少动态效果" />} />
           <Row label="保存提示" hint="编辑后在详情右上角显示「已保存到本机」"
             right={<Toggle on={s.saveFlash} onChange={(b) => upS({ saveFlash: b })} label="保存提示" />} />
-          <Row label="默认紧凑列表" hint="列表页默认使用紧凑行视图"
-            right={<Toggle on={s.compactList} onChange={(b) => upS({ compactList: b })} label="紧凑列表" />} />
+          <Row label={tt("默认紧凑列表", "Compact list by default")} hint={tt("列表页默认使用紧凑行视图", "List page defaults to the compact row view")}
+            right={<Toggle on={s.compactList} onChange={(b) => upS({ compactList: b })} label={tt("紧凑列表", "Compact list")} />} />
+        </Sec>
+
+        <Sec title={tt("左栏布局", "Sidebar layout")} desc={tt("按需显示左栏的各个区域，让工作台更像你自己的", "Show or hide each sidebar section to make the workbench feel like yours")} delay={100}>
+          {([
+            ["smartViews", tt("智能视图", "Smart views"), tt("最近使用、收藏、草稿等快捷入口", "Recently used, favorites, drafts, and other shortcuts")],
+            ["vaults", tt("仓库与分组", "Vaults & groups"), tt("左侧的仓库目录与分组树", "The vault directory and group tree")],
+            ["tags", tt("标签", "Tags"), tt("横向筛选用的标签云", "The tag cloud for cross-cutting filters")],
+            ["typeCenter", tt("类型中心入口", "Type Center entry"), tt("主导航中的类型中心快捷入口", "The Type Center shortcut in the main navigation")],
+            ["syncCard", tt("同步状态卡", "Sync status card"), tt("左栏底部的连接状态与待同步提示", "Connection status and pending-sync hint at the bottom")],
+          ] as const).map(([key, label, hint]) => (
+            <Row key={key} label={label} hint={hint}
+              right={<Toggle on={s.sidebar?.[key] ?? true} onChange={(b) => upS({ sidebar: { ...s.sidebar, [key]: b } })} label={label} />} />
+          ))}
         </Sec>
 
         <Sec title={tt("类型与模板", "Types & templates")} desc={tt("每种类型都有自己的字段结构，可在此新建、编辑字段与开关", "Each type has its own fields — create, edit and toggle them here")} delay={120}>

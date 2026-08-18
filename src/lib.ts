@@ -193,12 +193,21 @@ export interface Vault {
   createdAt: number; updatedAt: number; syncOn: boolean;
 }
 
+/** 左栏区域可见性 · sidebar section visibility */
+export interface SidebarPrefs {
+  smartViews: boolean; vaults: boolean; tags: boolean; typeCenter: boolean; syncCard: boolean;
+}
+export const DEFAULT_SIDEBAR: SidebarPrefs = {
+  smartViews: true, vaults: true, tags: true, typeCenter: true, syncCard: true,
+};
+
 export interface Settings {
   lang: Lang;                       // 界面语言 UI language
   deviceName: string; wsUrl: string; ns: string; autoSync: boolean;
   scope: "all" | "fav" | "current";
   apiUrl: string; apiKey: string; apiModel: string;
   reduceMotion: boolean; saveFlash: boolean; compactList: boolean;
+  sidebar: SidebarPrefs;            // 左栏区域开关 sidebar toggles
 }
 
 export interface AppState {
