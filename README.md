@@ -18,7 +18,7 @@
 
 ---
 > 🚀 **在线体验：[https://muge-heng.github.io/yanchi-prompt-workbench/](https://muge-heng.github.io/yanchi-prompt-workbench/)**
-> 数据全部保存在浏览器本机，不会上传任何服务器。
+数据全部保存在浏览器本机，不会上传任何服务器。
 
 ## 一句话说清楚
 
