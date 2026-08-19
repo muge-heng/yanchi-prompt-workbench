@@ -104,7 +104,9 @@ recent edits, type quick-stamps, a sync status card, and to-test reminders. The
 linen sidebar on the left holds vaults, groups, and tags; the detail panel opens
 on the right, and Focus mode (the `\` key) goes full-screen for editing.
 
-> Screenshots will be added to `docs/screenshots/`.
+> **HomePage:**
+> <img width="1900" height="1023" alt="image" src="https://github.com/user-attachments/assets/277f9bf9-172f-4803-8a9a-80de503b9ccc" />
+
 
 ## Quick start
 
