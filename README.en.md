@@ -234,13 +234,6 @@ Third-party credits:
 
 > Before publishing to GitHub, you may replace `Yanchi Contributors` in `LICENSE` with your own name or org.
 
-## Roadmap
-
-- [ ] Keyboard & drag-and-drop reordering for groups
-- [ ] Line-by-line highlighted version diff view
-- [ ] Browser-tab / Web Share quick-capture entry
-- [ ] More built-in templates (customer service, marketing, code review…)
-- [ ] PWA install & offline icon
 
 ## FAQ
 
