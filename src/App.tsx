@@ -8,7 +8,9 @@ import Editor from "./Editor";
 import Settings from "./Settings";
 import SyncCenter from "./SyncCenter";
 import CommandPalette from "./CommandPalette";
+import TypeManager from "./TypeManager";
 import { Icon, SyncDot } from "./ui";
+import { tt } from "./lib";
 
 export default function App() {
   return (
@@ -40,7 +42,7 @@ function Shell() {
       if (mod && e.key.toLowerCase() === "k") { e.preventDefault(); setPaletteOpen(!paletteOpen); return; }
       if (mod && e.key === "\\") { e.preventDefault(); if (selectedId) setFocus(!focus); return; }
       if (mod && e.key === ",") { e.preventDefault(); nav({ name: "settings" }); return; }
-      if (mod && e.key.toLowerCase() === "s") { e.preventDefault(); toast("ok", "已保存到本机"); return; }
+      if (mod && e.key.toLowerCase() === "s") { e.preventDefault(); toast("ok", tt("已保存到本机", "Saved to this device")); return; }
       if (typing) return;
       if (e.key === "Escape" && focus) { setFocus(false); return; }
       if (mod) return;
@@ -60,7 +62,7 @@ function Shell() {
 
   function quickNew() {
     const vid = route.vaultId || state.vaults[0]?.id;
-    if (!vid) { toast("warn", "请先创建一个仓库"); nav({ name: "vaults" }); return; }
+    if (!vid) { toast("warn", tt("请先创建一个仓库", "Please create a vault first")); nav({ name: "vaults" }); return; }
     const p = newPrompt(vid, "custom");
     set((s) => ({ ...s, prompts: [p, ...s.prompts] }));
     nav({ name: "list", vaultId: vid });
@@ -80,8 +82,8 @@ function Shell() {
       <div className="paper-bg flex h-screen flex-col items-center justify-center gap-5">
         <div className="seal-stamp flex h-16 w-16 items-center justify-center rounded-2xl text-[30px] font-black" style={{ animation: "breathe 2s ease-in-out infinite" }}>砚</div>
         <div className="text-center">
-          <div className="title-serif text-[17px] font-bold">正在打开本地仓库</div>
-          <div className="mt-1 text-[11.5px]" style={{ color: "var(--ink-3)" }}>数据从本机浏览器读取，不经过任何服务器</div>
+          <div className="title-serif text-[17px] font-bold">{tt("正在打开本地仓库", "Opening your local vault")}</div>
+          <div className="mt-1 text-[11.5px]" style={{ color: "var(--ink-3)" }}>{tt("数据从本机浏览器读取，不经过任何服务器", "Data is read from this browser — no server involved")}</div>
         </div>
         <div className="h-[3px] w-[140px] overflow-hidden rounded-full" style={{ background: "var(--line-2)" }}>
           <div className="h-full w-1/2 rounded-full" style={{ background: "var(--brass)", animation: "slideRight 1s ease-in-out infinite alternate" }} />
@@ -95,6 +97,7 @@ function Shell() {
     route.name === "vaults" ? <VaultListPage /> :
     route.name === "sync" ? <SyncCenter /> :
     route.name === "settings" ? <Settings /> :
+    route.name === "types" ? <TypeManager /> :
     <PromptListPage />;
 
   return (
@@ -108,9 +111,9 @@ function Shell() {
       {/* 移动端顶栏 */}
       <div className="fixed inset-x-0 top-0 z-30 flex h-[52px] items-center gap-3 border-b px-4 md:hidden"
         style={{ borderColor: "var(--line-2)", background: "linear-gradient(180deg, #f3ecdd, #ede3cd)" }}>
-        <button className="icon-btn" onClick={() => setDrawer(true)} aria-label="打开菜单"><Icon name="collapse" size={16} /></button>
+        <button className="icon-btn" onClick={() => setDrawer(true)} aria-label={tt("打开菜单", "Open menu")}><Icon name="collapse" size={16} /></button>
         <div className="seal-stamp flex h-7 w-7 items-center justify-center rounded-lg text-[14px] font-black">砚</div>
-        <span className="title-serif text-[15px] font-bold">砚池</span>
+        <span className="title-serif text-[15px] font-bold">{tt("砚池", "Yanchi")}</span>
         <span className="ml-auto"><SyncDot status={useStoreSyncStatus()} text={false} /></span>
       </div>
 
@@ -170,7 +173,7 @@ function Toasts() {
               {t.action.label}
             </button>
           )}
-          <button className="icon-btn !h-6 !w-6 flex-none" onClick={() => closeToast(t.id)} aria-label="关闭提示"><Icon name="close" size={11} /></button>
+          <button className="icon-btn !h-6 !w-6 flex-none" onClick={() => closeToast(t.id)} aria-label={tt("关闭提示", "Dismiss")}><Icon name="close" size={11} /></button>
         </div>
       ))}
     </div>

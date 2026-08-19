@@ -10,9 +10,14 @@
 </p>
 
 <p align="center">
+  <b>中文</b> | <a href="README.en.md">English</a>
+</p>
+
+<p align="center">
   <img src="https://img.shields.io/badge/License-MIT-8a6a2f?style=flat-square" alt="MIT License" />
   <img src="https://img.shields.io/badge/Storage-IndexedDB_本地优先-5c6b52?style=flat-square" alt="Local-first" />
   <img src="https://img.shields.io/badge/Sync-WebSocket_局域网-46526a?style=flat-square" alt="LAN Sync" />
+  <img src="https://img.shields.io/badge/i18n-中文_English-8a5a5a?style=flat-square" alt="i18n" />
   <img src="https://img.shields.io/badge/Python-启动器_零依赖-f2ece0?style=flat-square" alt="Python Launcher" />
 </p>
 
@@ -54,6 +59,12 @@ Agent / Chat / 生图 / 生视频等各类提示词，并可以通过局域网�
 | **生视频** | 首帧 · 尾帧 · 运动 · 镜头语言 · 节奏 · 转场 · 分镜列表 | 分镜卡片，**简洁版 / 详细版 / 专业版**三种文本 |
 | **自定义** | 自由正文 + 参数 | 写作、翻译、代码、工作流……任意结构 |
 
+### 类型中心（可自定义类型）
+- 不满意预设类型的字段？**类型中心**让你像搭积木一样编辑任意类型；
+- 增 / 删 / 开关字段，为字段选择图标与控件形态（单行 / 多行 / 对话 / 分镜）；
+- 新建类型时可挑选图案、点缀色与合成策略，一键复制现有类型再改造；
+- 内置类型可随时恢复默认，自定义类型可整体删除。
+
 ### 工作台调试
 - `{{变量}}` 自动识别与填写，支持保存多组**变量预设**；
 - 实时合成预览最终 Prompt，字符数与参数摘要一目了然；
@@ -74,11 +85,13 @@ Agent / Chat / 生图 / 生视频等各类提示词，并可以通过局域网�
 - 多端冲突不粗暴覆盖：保留本地 / 采用远端 / 同时保留副本；
 - 同步范围可选（全部 / 仅收藏 / 仅当前仓库），日志以可读语言呈现。
 
-### 轻拟物浅色界面
+### 轻拟物浅色界面 · 双语
 - 暖纸底色、噪点肌理、柔和阴影与细腻高光，黄铜与印章红点缀；
 - 思源宋体 × 思源黑体 × JetBrains Mono 的字体体系；
 - 克制的动效：卡片浮现、明信片式最近编辑、同步呼吸点、收藏盖章；
 - 遵循 `prefers-reduced-motion`，可在设置中进一步降低动效；
+- **中英文双语**：首次打开按系统语言自动选择，也可在设置中随时切换；
+- 左栏各区域（智能视图 / 仓库 / 标签 / 类型中心 / 同步卡）可在设置中按需显隐；
 - **有意不提供深色模式**——这是一间白天的书房。
 
 ## 界面一览
@@ -186,16 +199,17 @@ python tools/relay.py
 └── src/
     ├── App.tsx            # 应用外壳 · 三栏布局 · 全局快捷键
     ├── store.tsx          # 状态容器 · IndexedDB 持久化 · Toast
-    ├── lib.ts             # 数据模型 · 变量系统 · Prompt 合成引擎
-    ├── seed.ts            # 内置示例数据
+    ├── lib.ts             # 数据模型 · 变量系统 · Prompt 合成引擎 · 类型注册表
+    ├── seed.ts            # 内置示例数据（中英双语）
     ├── sync.ts            # WebSocket 同步引擎
     ├── Sidebar.tsx        # 导航 / 智能视图 / 目录 / 标签
     ├── Home.tsx           # 工作台首页
     ├── lists.tsx          # 仓库总览 / 列表 / 回收站
     ├── Editor.tsx         # 详情编辑面板
     ├── Workbench.tsx      # 调试工作台
+    ├── TypeManager.tsx    # 类型中心 · 创建/编辑类型
     ├── SyncCenter.tsx     # 同步中心
-    ├── Settings.tsx       # 设置 / 导入导出 / 关于
+    ├── Settings.tsx       # 设置 / 语言 / 导入导出 / 关于
     ├── CommandPalette.tsx # ⌘K 命令面板
     └── ui.tsx             # 图标库与基础组件
 ```
@@ -229,3 +243,4 @@ MIT 协议允许商用，保留 LICENSE 即可。
 ---
 
 <p align="center"><b>砚池</b> · 愿你的每一条提示词，都有处安放。</p>
+<p align="center"><a href="README.en.md">Read in English →</a></p>
